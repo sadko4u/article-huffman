@@ -1,0 +1,798 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="ru">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<title>Кодирование Хафмана. Часть 1.</title>
+<style>
+<!--
+p            { text-indent: 32; margin: 0 }
+img          { position: relative; margin-top: 0; margin-bottom: 0; padding: 0 }
+body         { font-size: 12pt }
+-->
+</style>
+</head>
+
+<body>
+
+<h1>Кодирование Хафмана. Часть 2.</h1>
+
+<h4><i>Автор: SadKo aka Садовников Владимир</i></h4>
+<h3>Вступление</h3>
+<p>Здравствуй, дорогой читатель! Данная
+статья является продолжением
+опубликованной в прошлом выпуске журнала
+статьи о кодировании Хафмана. В прошлой
+части мы рассмотрели алгоритм кодирования,
+описали его математическую модель,
+произвели кодирование и декодирование на
+конретном примере, рассчитали среднюю
+длину кодового слова, а также определили
+коэффициент сжатия. Кроме этого, были
+сделаны выводы о преимуществах и
+недостатках данного алгоритма.</p>
+<p>Однако, помимо этого неразрешёнными
+остались ещё два вопроса: реализация
+программы, сжимающей файл данных, и
+программы, распаковывающей сжатый файл.
+Первому вопросу и посвящена настоящая
+статья. Поэтому следует заняться
+проектированием.</p>
+<h3>Проектирование</h3>
+<p>Первым делом необходимо посчитать
+частоты вхождения символов в файл. Для
+этого опишем следующую структуру:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Структура для подсчёта частоты символа</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">typedef struct </font> </font></b><font SIZE="2"><font face="Courier New">TFreq</font></p>
+<p><font face="Courier New">{</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font></b><font face="Courier New"><b>&nbsp;&nbsp;&nbsp;
+</b>ch;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable&nbsp;&nbsp;&nbsp;&nbsp; *table;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; freq;</font></p>
+<p><font face="Courier New">} TFreq;</font></p>
+</font><p>Эта структура будет описывать каждый
+символ из 256. ch - сам ASCII-символ, freq -
+количество вхождений символа в файл. Поле
+table - указатель на структуру:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Описатель узла</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">typedef struct </font> </font></b><font SIZE="2"><font face="Courier New">TTable</font></p>
+<p><font face="Courier New">{</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></b><font face="Courier New">ch;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable&nbsp;&nbsp;&nbsp;&nbsp; *left;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable&nbsp;&nbsp;&nbsp;&nbsp; *right;</font></p>
+<p><font face="Courier New">} TTable;</font></p>
+</font><p>Как видно, TTable - это описатель узла с
+разветвлением по нулю и единице. При помощи
+этих структур в дальнейшем и будет
+осуществляться построение дерева
+компрессии. Теперь объявим для каждого
+символа свою частоту и свой узел:</p>
+<p><font face="Courier New"><font SIZE="2">TFreq&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[</font><font SIZE="2" COLOR="#008000">256</font><font SIZE="2">];</font></font></p>
+<p>Попробуем разобраться, каким образом
+будет осуществляться построение дерева. На
+начальной стадии программа должна
+осуществить проход по всему файлу и
+подсчитать количество вхождений символов в
+него. Помимо этого, для каждого найденного
+символа программа должна создать описатель
+узла. После этого из созданных узлов с
+учётом частоты символов программа строит
+дерево, размещая узлы в определённом
+порядке и устанавливая между ними связи.</p>
+<p>Построенное дерево хорошо для
+декодирования файла. Но для кодирования
+файла оно неудобно, потому что неизвестно, в
+каком направлении следует идти от корня,
+чтобы добраться до необходимого символа.
+Для этого удобнее построить таблицу
+преобразования символов в код. Поэтому
+определим ещё одну структуру:</p>
+<font SIZE="2"><i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Описатель кодового символа</font></p>
+</font></i><b>
+<p><font face="Courier New">typedef struct </font> </b><font face="Courier New">TOpcode</font></p>
+<p><font face="Courier New">{</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; opcode;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; len;</font></p>
+<p><font face="Courier New">} TOpcode;</font></p>
+</font><p>Здесь opcode - кодовая комбинация символа,
+а len - её длина (в битах). И объявим таблицу из
+256 таких структур:</p>
+<p><font SIZE="2">TOpcode&nbsp;&nbsp;&nbsp;&nbsp; Opcodes[</font><font SIZE="2" COLOR="#008000">256</font><font SIZE="2">];</font></p>
+<p>Зная кодируемый символ, можно определить
+его кодовое слово по таблице. Теперь
+перейдём непосредственно к подсчёту частот
+символов (и не только).</p>
+<h3>Подсчёт частот символов</h3>
+<p>В принципе, это действие не составляет
+труда. Достаточно открыть файл и подсчитать
+в нём число символов, заполнив
+соответствующие структуры. Посмотрим
+реализацию этого действия.</p>
+<p>Для этого объявим глобальные дескрипторы
+файлов:</p>
+<p><font face="Courier New">FILE *in, *out, *assemb;</font></p>
+<p>in - файл, из которого осуществляется
+чтение несжатых данных.</p>
+<p>out - файл, в который осуществляется запись
+сжатых данных.</p>
+<p>assemb - файл, в который будет сохранено
+дерево в удобном для распаковки виде. Так
+как распаковщик будет написан на
+ассемблере, то вполне рационально дерево
+сделать частью распаковщика, т.е.
+представить его в виде инструкций на
+Ассемблере.</p>
+<p>Первым делом необходимо
+проинициализировать все структуры
+нулевыми значениями:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Подсчёт частот символов</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">int </font> </font></b><font SIZE="2"><font face="Courier New">CountFrequency(<b>void</b>)</font></p>
+<p><font face="Courier New">{</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </b><font face="Courier New">i;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font></font><i><font size="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;// переменная цикла</font></p>
+</font>
+</i>
+<p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </font></b><font face="Courier New"><font SIZE="2">count=</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;</font></font><i><font size="2" COLOR="#ff0000"><font face="Courier New">
+&nbsp;&nbsp;&nbsp;&nbsp;
+// вторая переменная
+цикла</font></p>
+</font>
+</i>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD TotalCount=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// размер файла.</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; // Инициализация структур</font></p>
+</i></font>
+<p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; for </font> </font></b><font face="Courier New"><font SIZE="2">(i=</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;
+i&lt;</font><font SIZE="2" COLOR="#008000">256</font></font><font SIZE="2"><font face="Courier New">; i++)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].freq=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].table=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].ch=i;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+</font><p>После этого мы подсчитываем число
+вхождений символа в файл и размер файла (конечно,
+не самым идеальным способом, но в примере
+нужна наглядность):</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;<font face="Courier New">&nbsp;&nbsp; // Подсчёт частот символов (посимвольно)</font></p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; while
+</font> </font></b><font SIZE="2">(!feof(in))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// пока не достигнут
+конец файла</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; i=fgetc(in);</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if </font> </b><font face="Courier New">(i!=EOF)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// если не конец файла</font></p>
+</font></i>
+<p><font size="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].freq++;
+</font>
+</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// частота ++</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+TotalCount++;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+размер ++</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+</font><p>Так как код неравномерный, то
+распаковщику будет проблематично узнать
+число считываемых символов. Поэтому в
+таблице распаковки необходимо
+зафиксировать его размер:</p>
+
+<font SIZE="2" COLOR="#ffffff">
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // &quot;Сообщаем&quot;
+распаковщику размер файла</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; fprintf(assemb,
+</font> </font><font SIZE="2" COLOR="#000080">&quot;coded_file_size:\n
+dd %8lxh\n\n&quot;</font><font SIZE="2"><font face="Courier New">, TotalCount);</font></p>
+</font><p>После этого все используемые символы
+смещаются в начало массива, а
+неиспользуемые затираются (путём
+перестановок).</p>
+
+<font SIZE="2" COLOR="#ffffff">
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // смещаем
+все неиспользуемые символы в конец</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; i=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; count=</font></font><font SIZE="2" COLOR="#008000">256</font><font SIZE="2"><font face="Courier New">;</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; while </font> </b><font face="Courier New">(i&lt;count)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+пока не достигли конца</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if </font> </b><font face="Courier New">(Freq[i].freq==</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">)&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// если частота 0</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[i]=Freq[--count]; </font> </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// то
+копируем запись из конца</font></p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</font></p>
+<p></font></b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+i++;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// всё ОК -
+двигаемся дальше.</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+</font><p>И только после такой &quot;сортировки&quot;
+выделяется память под узлы (для некоторой
+экономии).</p>
+
+<font SIZE="2" COLOR="#ffffff">
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
+// Выделяем память под узлы</font></p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; for </font></font></b><font face="Courier New"><font SIZE="2">(i=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">;
+i&lt;count; i++)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].table=<b>new
+</b>TTable;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+создаём узел</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[i].table-&gt;left=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+без соединений</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[i].table-&gt;right=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+без соединений</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[i].table-&gt;ch=Freq[i].ch;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+копируем символ</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[i].freq=Freq[i].freq;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+и частоту</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; return </b>count;</font></p>
+<p><font face="Courier New">}</font></p>
+</font>
+<p>Таким образом, мы написали функцию
+первоначальной иницализации системы, или,
+если смотреть на алгоритм в первой части
+статьи, &quot;записали используемые символы в
+столбик и приписали к ним вероятности&quot;, а
+также для каждого символа создали &quot;отправную
+точку&quot; - узел - и проинициализировали её. В
+поля left и right&nbsp;записали нули. Таким образом,
+если узел будет в дереве последним, то это
+будет легко увидеть по left и right, равным нулю.</p>
+
+<h3>Создание дерева</h3>
+
+<p>Итак, в предыдущем разделе мы &quot;записали
+используемые символы в столбик и приписали
+к ним вероятности&quot;. На самом деле, мы
+приписали к ним не вероятности, а числители
+дроби (т.е. количество вхождений символов в
+файл). Теперь надо построить дерево. Но для
+того, чтобы это сделать, необходимо найти
+минимальный элемент в списке. Для этого
+вводим функцию, в которую передаём два
+параметра - количество элементов в списке и
+элемент, который следует исключить (потому
+что искать будем парами, и будет очень
+неприятно, если мы от функции дважды
+получим один и тот же элемент):</p>
+
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// поиск узла с наименьшей
+вероятностью.</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">int </font></font></b><font SIZE="2"><font face="Courier New">FindLeast(<b>int
+</b>count, <b>int </b>index)</font></p>
+<p><font face="Courier New">{</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; int </b>i;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD min=(index==</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">)
+? </font><font SIZE="2" COLOR="#008000">1 </font><font SIZE="2">: </font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+элемент, который считаем</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// минимальным</font></p>
+</i></font>
+<p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; for </font></font></b><font face="Courier New"><font SIZE="2">(i=</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;
+i&lt;count; i++)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+цикл по массиву</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if </b>(i!=index)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+если элемент не исключён</font></p>
+</i></font>
+<p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if </font></font></b><font SIZE="2" face="Courier New">(Freq[i].freq&lt;Freq[min].freq)
+</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+сравниваем</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+min=i;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+меньше минимума - запоминаем</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; return </b>min;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+возвращаем индекс минимума</font></p>
+</i></font><font SIZE="2">
+<p><font face="Courier New">}</font></p>
+</font><p>Поиск реализован несложно: сначала
+выбираем &quot;минимальный&quot; элемент
+массива. Если исключаемый элемент - 0, то
+берём в качестве минимума первый элемент, в
+противном случае минимумом считаем нулевой.
+По мере прохождения по массиву сравниваем
+текущий элемент с &quot;минимальным&quot;, и если
+он окажется меньше, то его помечаем как
+минимальный.</p>
+
+<p>Теперь, собственно говоря, сама функция
+построения дерева:</p>
+
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Функция построения дерева</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">PreInit(<b>int
+</b>count)</font></p>
+<p><font face="Courier New">{</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; int </b>ind1, ind2; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+индексы элементов</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable
+*table;&nbsp; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+указатель на &quot;новый узел&quot;</font></p>
+<p></font></i></p>
+<p><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp; while </font></b><font SIZE="2">(count&gt;</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">)
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+цикл, пока не достигли корня</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ind1=FindLeast(count,-</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">);&nbsp;&nbsp;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+первый узел</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+ind2=FindLeast(count,ind1); </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+второй узел</font></p>
+</font></i>
+<p>&nbsp;</p>
+<p><font SIZE="2" face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+table=<b>new </b>TTable;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+создаём новый узел</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+table-&gt;ch=-</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// не
+конечный</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+table-&gt;left=Freq[ind1].table;&nbsp; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+0 - узел 1</font></p>
+<p></font></i><font SIZE="2" face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+table-&gt;right=Freq[ind2].table; </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+1 - узел 2</font></p>
+</font></i>
+<p>&nbsp;</p>
+<p><font face="Courier New"><font SIZE="2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[ind1].ch=-</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+модифицируем запись о</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[ind1].freq+=Freq[ind2].freq; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+частоте для символа</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[ind1].table=table;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+и пишем новый узел</font></p>
+</i></font>
+<p></p>
+<p><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if </font></b><font SIZE="2">(ind2!=(--count))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+если ind2 не последний</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Freq[ind2]=Freq[count];&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+то на его место</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// помещаем последний в массиве</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p><font face="Courier New">}</font></p>
+<h3><font face="Courier New">Таблица кодовых символов</font></h3>
+</font>
+<p>Итак, дерево в памяти мы построили:
+попарно брали два узла, создавали новый
+узел, в который записывали на них указатели,
+после чего второй узел удаляли из списка, а
+вместо первого узла писали новый с
+разветвлением.</p>
+<p>Теперь возникает ещё одна проблема:
+кодировать по дереву неудобно, потому что
+необходимо точно знать, по какому пути
+находится тот или иной символ. Однако
+проблема решается довольно просто:
+создаётся ещё одна таблица - таблица
+кодовых символов - в неё и записываются
+битовые комбинации всех используемых
+символов. Для этого достаточно однократно
+рекурсивно обойти дерево. Заодно, чтобы
+повторно его не обходить, можно в функцию
+обхода добавить генерацию ассемблерного
+файла для дальнейшего декодирования сжатых
+данных (см. раздел &quot;<b>Проектирование</b>&quot;).</p>
+<p>Собственно, сама функция не сложна. Она
+должна приписывать к кодовой комбинации 0
+или 1, если узел не конечный, в противном
+случае добавить кодовый символ в таблицу.
+Помимо всего этого, сгенерировать
+ассемблерный файл. Рассмотрим эту функцию:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Функция рекурсивного
+обхода дерева</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">RecurseMake(TTable
+*tbl, DWORD opcode, <b>int </b>len)</font></p>
+<p><font face="Courier New">{</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; fprintf(assemb,</font></font><font face="Courier New"><font SIZE="2" COLOR="#000080">&quot;opcode%08lx_%04x:\n&quot;</font><font SIZE="2">,opcode,len);
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+метку в файл</font></p>
+<p>&nbsp;</p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; if </font></font></b><font face="Courier New"><font SIZE="2">(tbl-&gt;ch!=-</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">)
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+узел конечный</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BYTE mod=</font></font><font SIZE="2" COLOR="#008000" face="Courier New">32</font><font SIZE="2"><font face="Courier New">-len;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Opcodes[tbl-&gt;ch].opcode=(opcode&gt;&gt;mod);
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+сохраняем код</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Opcodes[tbl-&gt;ch].len=len; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+и его длину (в битах)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // и
+создаём соответствующую метку</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+fprintf(assemb,</font></font><font SIZE="2" COLOR="#000080" face="Courier New">&quot;
+db %03xh,0ffh,0ffh,0ffh\n\n&quot;</font><font SIZE="2"><font face="Courier New">,tbl-&gt;ch);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; else </b></font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+узел не конечный</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; opcode&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+освобождаем место под новый бит</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+len++;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+увеличиваем длину кодового слова</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //
+делаем ссылки на метки символов</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+fprintf(assemb,</font></font><font SIZE="2" COLOR="#000080" face="Courier New">&quot;
+dw opcode%08lx_%04x\n&quot;</font><font SIZE="2"><font face="Courier New">,opcode,len);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fprintf(assemb,</font></font><font face="Courier New"><font SIZE="2" COLOR="#000080">&quot;
+dw opcode%08lx_%04x\n\n&quot;</font><font SIZE="2">,opcode|</font><font SIZE="2" COLOR="#008000">0x80000000</font></font><font SIZE="2"><font face="Courier New">,len);</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Рекурсивный вызов</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+RecurseMake(tbl-&gt;left,opcode,len);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+RecurseMake(tbl-&gt;right,opcode|</font></font><font SIZE="2" COLOR="#008000" face="Courier New">0x80000000</font><font SIZE="2"><font face="Courier New">,len);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
+// удаляем узел (он уже не нужен)</font></p>
+<p></font></i><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp;
+delete </font></b></font><font SIZE="2"><font face="Courier New">tbl;</font></p>
+<p><font face="Courier New">}</font></p>
+</font>
+<p>&nbsp;</p>
+<p>Помимо всего прочего, после прохождения
+узла функция удаляет его (освобождает
+указатель). Теперь разберёмся, что за
+параметры передаются в функцию.</p>
+<p>tbl - узел, который надо обойти.</p>
+<p>opcode - текущее кодовое слово. Старший бит
+должен быть всегда свободен. len - длина
+кодового слова. В принципе, функция не
+сложнее &quot;классического факториала&quot; и
+не должна вызывать трудностей.</p>
+<h3>Битовый вывод</h3>
+<p>Вот мы и добрались до не самой приятной
+части нашего архиватора, а именно - до
+вывода кодовых символов в файл. Проблема
+состоит в том, что кодовые символы имеют
+неравномерную длину и вывод приходится
+осуществлять побитовый. В этом поможет
+функция PutCode. Но для начала объявим две
+переменные - счётчик битов в байте и
+выводимый байт:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Счётчик битов</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">int </font></font></b><font SIZE="2"><font face="Courier New">OutBits;</font></p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Выводимый символ</font></p>
+</font></i><font SIZE="2">
+<p><font face="Courier New">BYTE OutChar;</font></p>
+</font>
+<p>OutBits увеличивается на один при каждом
+выводе бита, OutBits==8 сигнализирует о том, что
+OutChar следует сохранить в файл.</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Соханить код</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">PutCode(<b>int
+</b>ch)</font></p>
+<p><font face="Courier New">{</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; int </b>len;</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; int </b>outcode;</font></p>
+<p>&nbsp;</p>
+</font>
+<p><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
+// получаем длину кодового слова и само
+кодовое слово</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; outcode=Opcodes[ch].opcode;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+кодовое слово</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; len=Opcodes[ch].len;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+длина (в битах)</font></p>
+<p>&nbsp;</p>
+<p></font></i><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp;
+while </font></b><font SIZE="2">(len&gt;</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">)
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+выводим побитно</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// Цикл пока переменная OutBits занята не
+полностью</font></p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+while </font></font></b><font face="Courier New"><font SIZE="2">((OutBits&lt;</font><font SIZE="2" COLOR="#008000">8</font><font SIZE="2">)
+&amp;&amp; (len&gt;</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">))</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+OutChar&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+освобождаем место</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+OutChar|=((outcode&amp;</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">)&lt;&lt;</font><font SIZE="2" COLOR="#008000">7</font><font SIZE="2">);
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// и
+в него помещаем бит</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+outcode&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+следующий бит кода</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+len--;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+уменьшаем длину</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+OutBits++;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+количество битов выросло</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+}</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// если используются все 8 бит, то сохраняем
+их в файл</font></p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if </font></font></b><font face="Courier New"><font SIZE="2">(OutBits==</font><font SIZE="2" COLOR="#008000">8</font></font><font SIZE="2"><font face="Courier New">)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+fputc(OutChar,out); </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+сохраняем в файл</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+OutBits=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+обнуляем</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+OutChar=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+параметры</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+}</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p><font face="Courier New">}</font></p>
+</font>
+<p>Помимо этого, нужно организовать что-то
+вроде &quot;fflush&quot;, т.е. после вывода
+последнего кодового слова OutChar не
+поместится в выходной файл, т.к. OutBits!=8.
+Отсюда появляется ещё одна небольшая
+функция:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// &quot;Очистка&quot; буфера
+битов</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">EndPut(<b>void</b>)</font></p>
+<p><font face="Courier New">{</font></p>
+</font>
+<p><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
+// Если в буфере есть биты</font></p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; if </font></font></b><font face="Courier New"><font SIZE="2">(OutBits!=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; OutChar&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">8</font><font SIZE="2">-OutBits;
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+сдвигаем</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+fputc(OutChar,out);&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
+и сохраняем в файле</font></p>
+</i></font>
+<p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p><font face="Courier New">}</font></p>
+</font>
+<h3>Вызываем помощников</h3>
+<p>Все рассмотренные ранее функции не
+являются основными. Но с их помощью можно
+проиллюстрировать простой порядок
+действий:</p>
+<p>1. Выписать все элементы в столбик и
+приписать вероятности.</p>
+<p>2. Построить дерево по полученному
+столбику.</p>
+<p>3. Записать кодовую таблицу символов.</p>
+<p>4. По кодовой таблице закодировать
+исходные данные.</p>
+<p>Собственно говоря, вот и функция, которая
+выполняет эти действия:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Создание сжатого файла</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">void </font> </font></b><font SIZE="2"><font face="Courier New">MakeFile(<b>void</b>)</font></p>
+<p><font face="Courier New">{</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </b><font face="Courier New">count;</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </b><font face="Courier New">ch;</font></p>
+<p><font face="Courier New">&nbsp;</font></p>
+</font>
+<p><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // выписать
+все элементы в столбик и приписать
+вероятности</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; count=CountFrequency();</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; //
+построить дерево</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; PreInit(count);</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; //
+записать кодовую таблицу символов</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; RecurseMake(Freq[</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">].table,</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">,</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">);</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; //
+закодировать по кодовой таблице исходные
+данные</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; fseek(in,</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">,SEEK_SET);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; OutChar=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; OutBits=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; while </font> </b><font face="Courier New">((ch=fgetc(in))!=EOF)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PutCode(ch);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; EndPut(); </font> </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
+&quot;очистить буфер&quot;</font></p>
+</font></i><font SIZE="2">
+<p><font face="Courier New">}</font></p>
+</font>
+<h3>Мейн</h3>
+<p>Всё, все функции готовы. Осталось только
+реализовать функцию main. Необходимо
+определить, какие она должна получить
+аргументы. А всё очень просто - имя
+исходного файла, имя закодированного файла,
+а также имя файла, в который будет помещена
+таблица. Лично я всю операцию по открытию/закрытию
+файлов решил возложить на main. И вот как это
+выглядит:</p>
+<font SIZE="2" COLOR="#008000">
+<p><font face="Courier New">#include &lt;stdio.h&gt;</font></p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Определение типов данных</font></p>
+</font></i><font SIZE="2" COLOR="#008000">
+<p><font face="Courier New">#ifdef __MSDOS__</font></p>
+<p></font><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp; typedef
+unsigned char </font></b></font><font SIZE="2"><font face="Courier New">BYTE;</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; typedef unsigned int </b>WORD;</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; typedef unsigned long </b>DWORD;</font></p>
+</font><font SIZE="2" COLOR="#008000">
+<p><font face="Courier New">#else</font></p>
+<p></font><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp; typedef
+unsigned char </font></b></font><font SIZE="2"><font face="Courier New">BYTE;</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; typedef unsigned short </b>WORD;</font></p>
+<p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; typedef unsigned int </b>DWORD;</font></p>
+</font><font SIZE="2" COLOR="#008000">
+<p><font face="Courier New">#endif</font></p>
+</font>
+<p>&nbsp;</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p><font face="Courier New">// Ахтунг! Главная функция!</font></p>
+</font></i><b><font SIZE="2">
+<p><font face="Courier New">void </font> </font></b><font SIZE="2"><font face="Courier New">main(<b>int </b>argc, <b>char </b>*argv[])</font></p>
+<p><font face="Courier New">{</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; if </font> </b><font face="Courier New">(argc==</font></font><font SIZE="2" COLOR="#008000">4</font><font SIZE="2"><font face="Courier New">)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// поочереди открываем/закрываем файлы</font></p>
+<p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if
+</font> </font></b><font face="Courier New"><font SIZE="2">((in=fopen(argv[</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">],</font><font SIZE="2" COLOR="#000080">&quot;rb+&quot;</font><font SIZE="2">))!=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if
+</font> </b><font face="Courier New">((out=fopen(argv[</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">2</font><font SIZE="2">],</font><font SIZE="2" COLOR="#000080">&quot;wb+&quot;</font><font SIZE="2">))!=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+if </font> </b><font face="Courier New">((assemb=fopen(argv[</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">3</font><font SIZE="2">],</font><font SIZE="2" COLOR="#000080">&quot;wb+&quot;</font><font SIZE="2">))!=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+{</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+// дошли до момента, когда можно делать код</font></p>
+<p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+MakeFile();</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+fclose(assemb);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+printf(</font></font><font SIZE="2" COLOR="#000080">&quot;Compressed successful\n&quot;</font><font SIZE="2"><font face="Courier New">);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+}</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+else</font></p>
+<p></b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+printf(</font></font><font SIZE="2" COLOR="#000080">&quot;Can't open assembler table
+file %s\n&quot;</font><font SIZE="2"><font face="Courier New">,</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+argv[</font></font><font SIZE="2" COLOR="#008000">3</font><font SIZE="2"><font face="Courier New">]);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+fclose(out);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</font></p>
+<p></b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+printf(</font></font><font face="Courier New"><font SIZE="2" COLOR="#000080">&quot;Can't create file %s\n&quot;</font><font SIZE="2">,argv[</font><font SIZE="2" COLOR="#008000">2</font></font><font SIZE="2"><font face="Courier New">]);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fclose(in);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</font></p>
+<p></b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf(</font></font><font face="Courier New"><font SIZE="2" COLOR="#000080">&quot;Can't
+open file %s\n&quot;</font><font SIZE="2">,argv[</font><font SIZE="2" COLOR="#008000">1</font></font><font SIZE="2"><font face="Courier New">]);</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; else</font></p>
+<p></b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf(</font></font><font SIZE="2" COLOR="#000080">&quot;Usage:
+XARCH source output asm-file&quot;</font><font SIZE="2"><font face="Courier New">);</font></p>
+<p><font face="Courier New">}</font></p>
+</font>
+<p>&nbsp;</p>
+
+<h3>Постскриптум</h3>
+
+<p>Вот и эта статья подошла к своему
+логическому завершению. В принципе, здесь
+представлен вполне рабочий код. Однако
+стоит заметить, что этот код не всегда
+способен работать. Например, если частоты
+символов обладают следующей
+закономерностью: 0.5, 0.25, 0.125, 0.0625, то есть у
+каждого символа вероятность его появления
+обратнопропорциональна степени двойки. В
+таком случае максимальная длина символа
+составит 255 бит, что никак не поместится в
+переменную типа DWORD. Поэтому для таких
+особых случаев придётся немного
+поднапрячься и усложнить генерацию кодовой
+таблицы.</p>
+<p>Да, чуть не забыл. Провёл бенчмарк, сжав
+эту статью. Получил отношение 1:1.41, что
+довольно-таки неплохо.</p>
+
+<h3>P.P.S.</h3>
+
+<p>Позволю себе немного пофилософствовать.
+Сначала я не знал C++ и говорил: &quot;C++ это -
+язык программирования&quot;. Потом, когда стал
+его изучать, я всячески его хвалил: &quot;он
+может то, может это, а вот это - вообще класс,
+это супер язык&quot;. Но помере набора опыта С++
+стал для меня &quot;просто языком
+программирования&quot;. Почувствуйте разницу
+между этими тремя утверждениями.</p>
+
+</body>
+
+</html>

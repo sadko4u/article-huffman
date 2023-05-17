@@ -1,0 +1,650 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="ru">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<title>Кодирование Хафмана. Часть 3.</title>
+<style>
+<!--
+p            { text-indent: 32; margin: 0 }
+img          { position: relative; margin-top: 0; margin-bottom: 0; padding: 0 }
+body         { font-size: 12pt }
+-->
+</style>
+</head>
+
+<body>
+
+<h1>Кодирование Хафмана. Часть 3.</h1>
+
+<h4><i>Автор: SadKo aka Садовников Владимир</i></h4>
+<h3>Вступление</h3>
+<p>Здравствуй, дорогой читатель! Данная
+статья является продолжением
+опубликованных в прошлых двух выпусках журнала
+статей о кодировании Хафмана и, к великому
+сожалению, является заключительной в
+данном цикле. В прошлой
+части мы рассмотрели программу на C++,
+сжимающую данные. Кроме этого, автор
+соизволил признаться, что написанная
+программа не является идеалом, и что при
+определённых наборах частот сжатие будет
+неверным.</p>
+<p>Эта статья посвящена распаковке сжатого
+файла при помощи программы на ассемблере и
+дерева, построенного программой сжатия.
+Опять же следует оговориться: программа не
+рассчитана на распаковку гигантских файлов,
+но её в любой момент можно модифицировать
+так, чтобы подобных проблем не было. Что же
+касается самого алгоритма распаковки, то он
+предельно прост, что мы и обсудим в
+следующих разделах.</p>
+<h3>Быстрый старт</h3>
+<p>В качестве компилятора языка Ассемблера я
+решил выбрать всем полюбившийся FASM (его
+можно взять по адресу <a href="http://www.flatassembler.net/">http://www.flatassembler.net/</a>).
+Это очень удобный, маленький и шустрый
+компилятор, на нём даже пишут операционную
+систему MenuetOS (<a href="http://www.menuetos.net/">http://www.menuetos.net/</a>).
+Сам дистрибутив весит немного, и, думаю,
+этот компилятор однозначно &quot;must have&quot;.</p>
+<p>Ладно, что-то я удалился от темы. Начнём
+проектировать. Первым делом нам надо
+распределить ресурсы программы, то есть
+определить необходимый ей набор данных.
+Итак, в данном случае программа должна быть:</p>
+<p>1. Небольшой. Иначе выгоды от сжатия данных
+мы не получим.</p>
+<p>2. Быстрой. Это сам собой разумеющийся факт.</p>
+<p>3. Простой в использовании.</p>
+<p>Пункт 1 достигается за счёт программ типа
+COM: в них не надо дополнительно описывать
+сегменты, резервировать место под стек, в
+них нет стандартного MZ-заголовка, что уже
+сокращает код, как минимум, на 0x40 байт.
+Помимо этого, 64 килобайта файла типа COM для
+подобной программы - очень даже большая
+величина. Отсюда, соответственно, и вывод:
+программа будет иметь формат исполняемого
+файла типа COM.</p>
+<p>Пункт 2 достигается за счёт того, что
+программа написана на ассемблере, а также
+подобраны более-менее оптимальные
+алгоритмы (автор, естественно, не
+претендует на сверхпроизводительный код).</p>
+<p>Так как данная программа - лишь
+демонстрационный вариант, то я решил её
+упростить, а именно: зафиксировать имена
+входного и выходного файла: входной файл
+будет называться &quot;data.huf&quot;, а выходной -
+&quot;data.txt&quot;.</p>
+<p>Нам будут необходимы файловые
+дескрипторы входного и выходного файла:</p>
+<font SIZE="2">
+<p>file_in:</p>
+<p>&nbsp;&nbsp;&nbsp; dw </font><font SIZE="2" COLOR="#008000">0</p>
+</font><font SIZE="2">
+<p>file_out:</p>
+<p>&nbsp;&nbsp;&nbsp; dw </font><font SIZE="2" COLOR="#008000">0</font></p>
+<p>Помимо этого, нам нужно построить
+алгоритм чтения так, чтобы данные из файла
+читались побитно. Поэтому приходится
+объявлять следующие переменные (наподобие
+того, что мы делали в программе на С++):</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>; Состояние чтения из файла</p>
+</font></i><font SIZE="2">
+<p>in_byte:</p>
+<p>&nbsp;&nbsp;&nbsp; db </font><font SIZE="2" COLOR="#008000">0</p>
+</font><font SIZE="2">
+<p>in_count:</p>
+<p>&nbsp;&nbsp;&nbsp; db </font><font SIZE="2" COLOR="#008000">0</p>
+</font><font SIZE="2">
+<p>out_buf_bytes:</p>
+<p>&nbsp;&nbsp;&nbsp; dw </font><font SIZE="2" COLOR="#008000">0</p>
+</font><font SIZE="2">
+<p>in_index:</p>
+<p>&nbsp;&nbsp;&nbsp; dw </font><font SIZE="2" COLOR="#008000">0ffffh</p>
+</font>
+<p>&nbsp;</p>
+<p>Здесь in_byte - текущий байт, из которого
+поочерёдно будут извлекаться биты, in_count -
+количество ещё не извлечённых из байта бит,
+out_buf_bytes - размер буфера, который следует
+записать в выходной файл, in_index - номер
+текущего байта в буфере ввода.</p>
+<p>Объявляем символьные константы имён
+файлов и сообщений об ошибках:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>; Соответствующие данные</p>
+</font></i><font SIZE="2">
+<p>Message_in:</p>
+<p>&nbsp;&nbsp;&nbsp; db </font><font SIZE="2" COLOR="#000080">&quot;Can't open
+file data.huf$&quot;</p>
+</font><font SIZE="2">
+<p>Message_out:</p>
+<p>&nbsp;&nbsp;&nbsp; db </font><font SIZE="2" COLOR="#000080">&quot;Can't
+create file data.txt$&quot;</p>
+</font><font SIZE="2">
+<p>in_name:</p>
+<p>&nbsp;&nbsp;&nbsp; db </font><font SIZE="2" COLOR="#000080">&quot;data.huf&quot;</font><font SIZE="2">,</font><font SIZE="2" COLOR="#008000">0</p>
+</font><font SIZE="2">
+<p>out_name:</p>
+<p>&nbsp;&nbsp;&nbsp; db </font><font SIZE="2" COLOR="#000080">&quot;data.txt&quot;</font><font SIZE="2">,</font><font SIZE="2" COLOR="#008000">0</p>
+</font><p>Осталось только разрисовать
+структуру данных в памяти:</p>
+<p><img border="0" src="Drawing1.bmp" width="193" height="262"></p>
+<p>Верхние ячейки соответствуют младшим
+адресам, нижние - старшим. Заметим, что буфер
+вывода и буфер ввода - довольно-таки
+объёмные структуры, поэтому поместить их в
+файл - значит проиграть в размере
+декомпрессора. Поэтому следует прибегнуть
+к стандартной уловке: &quot;зарезервировать&quot;
+пространство в конце файла:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Буферы данных</p>
+</font></i><font SIZE="2">
+<p>align </font><font SIZE="2" COLOR="#008000">10h</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>; Структура памяти:</p>
+<p>; - Буфер вывода</p>
+<p>; - Буфер ввода</p>
+</font></i><font SIZE="2">
+<p>buffer:</p>
+</font><p>Задать положение и размер буферов
+помогут следующие константы в начале файла:</p>
+<font SIZE="2">
+<p>BLOCK_SIZE&nbsp;&nbsp; = </font><font SIZE="2" COLOR="#008000">8192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</font><i><font SIZE="2" COLOR="#ff0000">; Размер буферов</p>
+</font></i><font SIZE="2">
+<p>input_buffer = buffer+BLOCK_SIZE </font><i><font SIZE="2" COLOR="#ff0000">;
+Адрес буфера ввода</p>
+</font></i>
+<h3>Примитивы</h3>
+<p>Итак, как и в прошлой статье, пойдём от
+простого к сложному. И, на мой взгляд,
+следует начать с функции извлечения байта
+из буфера ввода в байтовый буфер:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Функция: считать байт из буфера ввода в
+байтовый буфер</p>
+</font></i><font SIZE="2">
+<p>read_byte:</p>
+<p><b>&nbsp;&nbsp;&nbsp; pusha</p>
+<p></b></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+Индекс байта в буфере ввода</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp; </b>bx, word [in_index]</p>
+<p><b>&nbsp;&nbsp;&nbsp; cmp</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, BLOCK_SIZE</p>
+<p><b>&nbsp;&nbsp;&nbsp; jb</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; no_block_load</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; Если
+номер байта выходит за границы буфера</p>
+<p>&nbsp;&nbsp;&nbsp; ; Читаем блок размером BLOCK_SIZE из
+файла</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, word [file_in]</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; cx, BLOCK_SIZE</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; dx, input_buffer</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; ah, </font><font SIZE="2" COLOR="#008000">3fh</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; int</b>&nbsp;&nbsp;&nbsp;&nbsp; </font><font SIZE="2" COLOR="#008000">21h</p>
+</font><font SIZE="2">
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; И
+обнуляем счётчик байтов в буфере</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; xor</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, bx</p>
+<p>&nbsp;</p>
+<p>no_block_load:</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+Извлекаем байт из буфера</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; al, byte [input_buffer+bx]</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+Увеличиваем счётчик на единицу</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; inc</b>&nbsp;&nbsp;&nbsp;&nbsp; bx</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; И
+заполняем данные о байте</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; byte [in_byte], al</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; byte [in_count], </font><font SIZE="2" COLOR="#008000">8</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; word [in_index], bx</p>
+<p><b>&nbsp;&nbsp;&nbsp; popa</p>
+</b>
+<p>&nbsp;&nbsp;&nbsp; <b>ret</b></p>
+</font><p>Разберёмся, что она выполняет. Первым
+делом она смотрит, есть ли ещё не считанные
+байты в буфере ввода (сравнивает содержимое
+in_index с BLOCK_SIZE). Если больше читать из буфера
+нечего, то она считывает входной буфер из
+файла и обнуляет счётчик байтов во входном
+буфере. После этого программа извлекает
+байт из буфера ввода, увеличивает счётчик
+текущего байта на единицу и заполняет
+данные байтового буфера: количество
+несчитанных бит (естественно, для байта их
+количество будет равно 8). Как оказалось,
+функция совсем несложная. Перейдём к
+следующей функции:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Функция: считать бит из файла и вернуть
+его в регистре ax</p>
+</font></i><font SIZE="2">
+<p>input_bit:</p>
+<p><b>&nbsp;&nbsp;&nbsp; push&nbsp;</b><b>&nbsp;&nbsp; </b>dx</p>
+<p><b>&nbsp;&nbsp;&nbsp; push&nbsp;&nbsp;&nbsp; </b>cx</p>
+<p><b>&nbsp;&nbsp;&nbsp; push&nbsp;</b><b>&nbsp;&nbsp; </b>bx</p>
+<p>&nbsp;</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; смотрим,
+все ли биты байта были считаны</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp;&nbsp; </b>byte [in_count], </font><font SIZE="2" COLOR="#008000">0</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; jne</b>&nbsp;&nbsp;&nbsp;&nbsp; input_get_bit</p>
+<p>&nbsp;</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; если
+байт пуст, то надо считать новый</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp;&nbsp; </b>read_byte</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Получаем бит из байта</p>
+</font></i><font SIZE="2">
+<p>input_get_bit:</p>
+<p><b>&nbsp;&nbsp;&nbsp; xor&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>ax, ax</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>dl, byte [in_byte]</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>al, dl</p>
+<p><b>&nbsp;&nbsp;&nbsp; shr&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>dl, </font><font SIZE="2" COLOR="#008000">1</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; and&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>al, </font><font SIZE="2" COLOR="#008000">1</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; byte [in_byte], dl</p>
+<p><b>&nbsp;&nbsp;&nbsp; dec</b>&nbsp;&nbsp;&nbsp;&nbsp; byte [in_count]</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Восстанавливаем сохранённые
+регистры и выходим</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; pop</b>&nbsp;&nbsp;&nbsp;&nbsp; bx</p>
+<p><b>&nbsp;&nbsp;&nbsp; pop</b>&nbsp;&nbsp;&nbsp;&nbsp; cx</p>
+<p><b>&nbsp;&nbsp;&nbsp; pop</b>&nbsp;&nbsp;&nbsp;&nbsp; dx</p>
+<p><b>&nbsp;&nbsp;&nbsp; ret</p>
+</b></font><p>Как уже видно из комментария к
+функции, она должна считать бит из
+байтового буфера и вернуть ax=1, если
+считанный бит равен единице и ax=0, если бит
+равен 0. Первым делом функция смотрит, есть
+ли ещё в байтовом буфере непрочитанные биты.
+Если такие биты не имеются, то вызвается
+функция чтения байта из буфера, уже
+рассмотренная ранее. После этого из
+байтового буфера считывается значение,
+берётся его младший бит и помещается в
+регистр ax, затем все биты сдвигаются на одну
+позицию вправо, и новое значение
+записывается в байтовый буфер. Также
+уменьшается информация о количестве
+несчитанных бит в байтовом буфере на
+единицу. Как видно отсюда, функция опять же
+не сложная.</p>
+
+<p>Теперь следует объявить функцию, которая
+записывает буфер вывода в файл. Собственно
+говоря, эта функция простая и является
+простой имплементацией функции DOS:</p>
+
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Функция: запись блока в файл</p>
+</font></i><font SIZE="2">
+<p>put_to_file:</p>
+<p><b>&nbsp;&nbsp;&nbsp; pusha</p>
+<p>&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; mov </b>ah, </font><font SIZE="2" COLOR="#008000">40h</p>
+<p></font><b><font SIZE="2">&nbsp;&nbsp;&nbsp; mov </font></b><font SIZE="2">bx,
+word [file_out]</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov </b>cx, word [out_buf_bytes]</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov </b>dx, buffer</p>
+<p><b>&nbsp;&nbsp;&nbsp; int </b></font><font SIZE="2" COLOR="#008000">21h</p>
+<p>&nbsp;</p>
+<p></font><b><font SIZE="2">&nbsp;&nbsp;&nbsp; popa</p>
+<p>&nbsp;&nbsp;&nbsp; ret</p>
+</font></b><p>Особого ничего интересного в этой
+функции нет. Просто в файл, описанный
+дескриптором file_out, записывается out_buf_bytes
+байт выходного буфера.</p>
+
+<h3>Шаги по дереву</h3>
+
+<p>Теперь мы имеем необходимый базис функций
+для того, чтобы организовать декодирование
+файла. И начнём с самой первой -
+декодирование байта:</p>
+
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Функция: пройтись по дереву, получить
+байт и поместить его в</p>
+<p>; выходной буфер</p>
+</font></i><font SIZE="2">
+<p>decode_byte_func:</p>
+<p><b>&nbsp;&nbsp;&nbsp; pusha</p>
+<p></b></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+Помещаем в bx адрес корня дерева</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp; </b>bx, opcode00000000_0000</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; И
+спускаемся по дереву</p>
+</font></i><font SIZE="2">
+<p>decode_byte_looping:</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; Если мы
+достигли конца ветки - выходим</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp;&nbsp; </b>word [bx+</font><font SIZE="2" COLOR="#008000">2</font><font SIZE="2">],
+</font><font SIZE="2" COLOR="#008000">0ffffh</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; je&nbsp;</b><b>&nbsp;&nbsp;&nbsp;&nbsp; </b>loop_out</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+Считываем бит</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; call&nbsp;</b><b>&nbsp;&nbsp; </b>input_bit </font><i><font SIZE="2" COLOR="#ff0000">;
+ax = считанный бит</p>
+</font></i><font SIZE="2">
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; И
+направляемся по соответствующей ветке</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; shl&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>ax, </font><font SIZE="2" COLOR="#008000">1</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; add</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, ax</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, word [bx]</p>
+<p>&nbsp;</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; Шагаем
+дальше</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; jmp</b>&nbsp;&nbsp;&nbsp;&nbsp; decode_byte_looping</p>
+<p>&nbsp;</p>
+<p>loop_out:</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; Мы нашли
+символ - он по адресу [bx]</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; al, byte [bx]</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+Помещаем символ в буфер</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, word [out_buf_bytes]</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; byte [buffer+bx],al</p>
+<p><b>&nbsp;&nbsp;&nbsp; inc&nbsp;&nbsp;&nbsp;&nbsp; </b>bx</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; word [out_buf_bytes],
+bx</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; Если мы
+не достигли конца буфера, осуществляем
+переход</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; cmp</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, BLOCK_SIZE</p>
+<p><b>&nbsp;&nbsp;&nbsp; jb</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; exit_decode_byte</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+Скидываем буфер в файл</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp;&nbsp; </b>put_to_file</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; word [out_buf_bytes], </font><font SIZE="2" COLOR="#008000">0</font></p>
+<p>&nbsp;</p>
+<font SIZE="2">
+<p>exit_decode_byte:</p>
+<p><b>&nbsp;&nbsp;&nbsp; popa</p>
+</b>
+<p>&nbsp;&nbsp;&nbsp; <b>ret</b></p>
+</font><p>Что же делает эта функция? Первым
+делом она загружает в регистр bx корень
+дерева - сгенерированную написанной в
+прошлой статье программой метку opcode00000000_0000.
+После этого осуществляет спуск по дереву от
+корня к листьям: если текущее положение не
+является конечным узлом дерева, то
+вызывается функция считывания бита - input_bit,
+после чего, в зависимости от того, какое
+значение содержится в ax, осуществляется
+переход по соответствующей ветке в
+следующий узел, действие повторяется, пока
+мы не достигнем &quot;финиша&quot;. В вершинах (конечных
+узлах) дерева содержится информация, какой
+символ соответствует этому узлу - поэтому
+программа с лёгкостью извлекает
+необходимый декодированный символ и
+помещает его в выходной буфер. После этого
+увеличивает счётчик байтов в выходном
+буфере. Если счётчик превышает значение
+BLOCK_SIZE, то программа записывает буфер в
+выходной файл и сбрасывает счётчик в ноль.</p>
+
+<p>Но эта функция реализует декодирование
+лишь одного байта. Рассмотрим теперь
+декодирование всего файла, чему и посвящена
+следующая функция:</p>
+
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Функция: декодировать файл</p>
+</font></i><font SIZE="2">
+<p>decode_file:</p>
+<p><b>&nbsp;&nbsp;&nbsp; pusha</p>
+</b>
+<p>decode_loop:</p>
+<p><b>&nbsp;&nbsp;&nbsp; cmp&nbsp;&nbsp;&nbsp;&nbsp; </b>dword [coded_file_size],</font><font SIZE="2" COLOR="#008000">0
+</font><i><font SIZE="2" COLOR="#ff0000">; Проверяем, все ли
+байты декодированы</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; je</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; end_decode_loop</p>
+<p><b>&nbsp;&nbsp;&nbsp; dec</b>&nbsp;&nbsp;&nbsp;&nbsp; dword [coded_file_size]
+</font><i><font SIZE="2" COLOR="#ff0000">; Счётчик байтов - 1</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; call&nbsp;</b><b>&nbsp;&nbsp; </b>decode_byte_func </font><i><font SIZE="2" COLOR="#ff0000">;
+И декодируем байт</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; jmp</b>&nbsp;&nbsp;&nbsp;&nbsp; decode_loop </font><i><font SIZE="2" COLOR="#ff0000">;
+Повторяем, пока счётчик не 0</p>
+<p>&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; ; сюда приходим, когда файл
+полностью декодирован</p>
+</font></i><font SIZE="2">
+<p>end_decode_loop:</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ;
+проверяем, не пуст ли выходной буфер</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; cx, word [out_buf_bytes]</p>
+<p><b>&nbsp;&nbsp;&nbsp; test&nbsp;</b><b>&nbsp;&nbsp; </b>cx, cx</p>
+<p><b>&nbsp;&nbsp;&nbsp; jz</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; exit_decode_file</p>
+<p></font><i><font SIZE="2" COLOR="#ff0000">&nbsp;&nbsp;&nbsp; ; Если в
+буфере есть данные, то их надо записать в
+файл</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; call&nbsp;</b><b>&nbsp;&nbsp; </b>put_to_file</p>
+<p>&nbsp;</p>
+<p>exit_decode_file:</p>
+<p><b>&nbsp;&nbsp;&nbsp; popa</p>
+</b>
+<p><b>&nbsp;&nbsp;&nbsp; ret</p>
+</b></font><p>Эту функцию автор оставляет на
+рассмотрение читателя, так как совсем
+очевидно, что она делает.</p>
+
+<h3>int main(int argc, const char *argv[])</h3>
+<p>Ну что же, теперь мы во всеоружии: у нас
+есть функция, которая декодирует файл и
+записывает декодированные данные в
+выходной файл. Что же, осталось дело не за
+многим, а именно - подготовить файловые
+дескрипторы и вызвать функцию
+декодирования файла. Это и делает наша
+функция start:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Точка входа: отсюда начинается
+выполнение программы</p>
+</font></i><font SIZE="2">
+<p>start:</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Устанавливаем сегментные
+регистры</p>
+<p></font></i><b><font SIZE="2">&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp; </font></b><font SIZE="2">ax,
+cs</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp; </b>ds, ax</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;&nbsp;&nbsp;&nbsp; </b>es, ax</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>ss, ax</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>sp, </font><font SIZE="2" COLOR="#008000">0fffeh</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Открываем файл для чтения (data.huf)</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; ax, </font><font SIZE="2" COLOR="#008000">3d02h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; xor</b>&nbsp;&nbsp;&nbsp;&nbsp; cx, cx</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; dx, in_name</p>
+<p><b>&nbsp;&nbsp;&nbsp; int</b>&nbsp;&nbsp;&nbsp;&nbsp; </font><font SIZE="2" COLOR="#008000">21h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; jc</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; not_open</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; word [file_in], ax</p>
+<p>&nbsp;</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Создаём и открываем файл для
+записи (data.txt)</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; ax, </font><font SIZE="2" COLOR="#008000">3c00h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; xor</b>&nbsp;&nbsp;&nbsp;&nbsp; cx, cx</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; dx, out_name</p>
+<p><b>&nbsp;&nbsp;&nbsp; int</b>&nbsp;&nbsp;&nbsp;&nbsp; </font><font SIZE="2" COLOR="#008000">21h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; jc</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; not_created</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; word [file_out], ax</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Декодируем файл</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; call&nbsp;&nbsp;&nbsp; </b>decode_file</p>
+<p>&nbsp;</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Закрываем созданный файл</p>
+</font></i><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; ah, </font><font SIZE="2" COLOR="#008000">3eh</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, word [file_out]</p>
+<p><b>&nbsp;&nbsp;&nbsp; int</b>&nbsp;&nbsp;&nbsp;&nbsp; </font><font SIZE="2" COLOR="#008000">21h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; jmp&nbsp;</b><b>&nbsp;&nbsp;&nbsp; </b>ok_exit</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Выводим сообщение об ошибке</p>
+</font></i><font SIZE="2">
+<p>not_created:</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; ah, </font><font SIZE="2" COLOR="#008000">09h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; dx, Message_out</p>
+<p><b>&nbsp;&nbsp;&nbsp; int&nbsp;&nbsp;&nbsp;&nbsp; </b></font><font SIZE="2" COLOR="#008000">21h</p>
+</font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Закрываем открытый для чтения
+файл</p>
+<p></font></i><font SIZE="2">ok_exit:</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; ah, </font><font SIZE="2" COLOR="#008000">3eh</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; bx, word [file_in]</p>
+<p><b>&nbsp;&nbsp;&nbsp; int</b>&nbsp;&nbsp;&nbsp;&nbsp; </font><font SIZE="2" COLOR="#008000">21h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; ret</p>
+</b></font><i><font SIZE="2" COLOR="#ff0000">
+<p>&nbsp;&nbsp;&nbsp; ; Ошибка: файл не был открыт</p>
+</font></i><font SIZE="2">
+<p>not_open:</p>
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; ah, </font><font SIZE="2" COLOR="#008000">09h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; mov</b>&nbsp;&nbsp;&nbsp;&nbsp; dx, Message_in</p>
+<p><b>&nbsp;&nbsp;&nbsp; int</b>&nbsp;&nbsp;&nbsp;&nbsp; </font><font SIZE="2" COLOR="#008000">21h</p>
+</font><font SIZE="2">
+<p><b>&nbsp;&nbsp;&nbsp; ret</p>
+</b></font><p>В принципе, эта функция выполняет
+следующие действия:</p>
+<p>1. Установить сегментные регистры
+эквивалентно cs, установить указатель стека
+в конец сегмента.</p>
+<p>2. Открыть файл для чтения с именем,
+содержащимся в строке in_name. Если открытие не
+удалось, то вывести сообщение об ошибке и
+выйти из программы.</p>
+<p>3. Создать и открыть файл для записи с
+именем, содержащимся в строке out_name. Если
+создание файла не удалось, то вывести
+соответствующее сообщение об ошибке и
+выполнить пункт 6.</p>
+<p>4. Вызвать функцию, декодирующую файл -
+decode_file.</p>
+<p>5. Закрыть выходной файл.</p>
+<p>6. Закрыть входной файл и выйти из
+программы.</p>
+<h3>Компиляция</h3>
+<p>Компиляция - одна из важнейших частей.
+Нужно сгенерировать файл, декодирующий
+сжатые данные, а для этого нужно
+сгенерировать таблицу декодирования и
+прилинковать к файлу. В принципе, это легко
+решается путём включения в исходник
+директивы:</p>
+<i><font SIZE="2" COLOR="#ff0000">
+<p>;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;</p>
+<p>; Собственно говоря, сама таблица
+декодирования</p>
+</font></i><font SIZE="2">
+<p>include </font><font SIZE="2" COLOR="#000080">&quot;map.asm&quot;</p>
+</font><p>Здесь map.asm - созданная программой на С++
+таблица декодирования файла.</p>
+<p>Таким образом, проглядывается
+необходимая последовательность действий:</p>
+<p>1. Сжать исходный файл, получить сжатые
+данные и таблицу декодирования.</p>
+<p>2. Скомпилировать программу-распаковщик с
+использованием сгенерированной таблицы.</p>
+<p>3. Проверить, работает ли распаковщик,
+выполнив декомпрессию.</p>
+<p>В таких случаях удобно писать bat-файлы.
+Собственно говоря, что мы и сделаем:</p>
+<font SIZE="2">
+<p>xarch xarch.cpp data.huf map.asm</p>
+<p>fasm xdecode.asm xdecode.com</p>
+<p>xdecode</p>
+</font><p>При запуске bat-файла получим следующие
+файлы:</p>
+<p>data.huf - сжатый алгоритмом Хафмана файл
+xarch.cpp.</p>
+<p>map.asm - дерево декодирования сжатого файла.</p>
+<p>xdecode.com - программа, декодирующая сжатые
+данные.</p>
+<p>Теперь xdecode.asm и data.huf можно пускать в
+свободное плавание :).</p>
+
+<h3>Постскриптум</h3>
+
+<p>Перед вами последняя статья из цикла &quot;Кодирование
+Хафмана&quot;. Надеюсь, я смог вложить в неё
+всю необходимую информацию. Слово, как
+всегда, остаётся за читателем, потому как
+только он может оценить, насколько данная
+статья полезна в повседневной деятельности.
+Конечно же, все перечисленные методы
+программирования не идеальны и не
+претендуют ни на какую абсолютную истину:
+это обычные примеры, которые всегда можно
+расширить и дополнить, получив тем самым
+необходимый результат.</p>
+
+<h3>P.P.S.</h3>
+
+<p>Здесь должно быть какое-нибудь заумное
+высказывание, тем или иным способом
+связанное с изложенным материалом. Но в
+этот раз право слова я оставлю читателю. Так
+что можете писать мне письма с вашими
+вариантами.</p>
+
+</body>
+
+</html>

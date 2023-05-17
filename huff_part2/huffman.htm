@@ -2,8 +2,8 @@
 
 <head>
 <meta http-equiv="Content-Language" content="ru">
-<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
-<title>Кодирование Хафмана. Часть 1.</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>РљРѕРґРёСЂРѕРІР°РЅРёРµ РҐР°С„РјР°РЅР°. Р§Р°СЃС‚СЊ 1.</title>
 <style>
 <!--
 p            { text-indent: 32; margin: 0 }
@@ -15,35 +15,35 @@ body         { font-size: 12pt }
 
 <body>
 
-<h1>Кодирование Хафмана. Часть 2.</h1>
+<h1>РљРѕРґРёСЂРѕРІР°РЅРёРµ РҐР°С„РјР°РЅР°. Р§Р°СЃС‚СЊ 2.</h1>
 
-<h4><i>Автор: SadKo aka Садовников Владимир</i></h4>
-<h3>Вступление</h3>
-<p>Здравствуй, дорогой читатель! Данная
-статья является продолжением
-опубликованной в прошлом выпуске журнала
-статьи о кодировании Хафмана. В прошлой
-части мы рассмотрели алгоритм кодирования,
-описали его математическую модель,
-произвели кодирование и декодирование на
-конретном примере, рассчитали среднюю
-длину кодового слова, а также определили
-коэффициент сжатия. Кроме этого, были
-сделаны выводы о преимуществах и
-недостатках данного алгоритма.</p>
-<p>Однако, помимо этого неразрешёнными
-остались ещё два вопроса: реализация
-программы, сжимающей файл данных, и
-программы, распаковывающей сжатый файл.
-Первому вопросу и посвящена настоящая
-статья. Поэтому следует заняться
-проектированием.</p>
-<h3>Проектирование</h3>
-<p>Первым делом необходимо посчитать
-частоты вхождения символов в файл. Для
-этого опишем следующую структуру:</p>
+<h4><i>РђРІС‚РѕСЂ: SadKo aka РЎР°РґРѕРІРЅРёРєРѕРІ Р’Р»Р°РґРёРјРёСЂ</i></h4>
+<h3>Р’СЃС‚СѓРїР»РµРЅРёРµ</h3>
+<p>Р—РґСЂР°РІСЃС‚РІСѓР№, РґРѕСЂРѕРіРѕР№ С‡РёС‚Р°С‚РµР»СЊ! Р”Р°РЅРЅР°СЏ
+СЃС‚Р°С‚СЊСЏ СЏРІР»СЏРµС‚СЃСЏ РїСЂРѕРґРѕР»Р¶РµРЅРёРµРј
+РѕРїСѓР±Р»РёРєРѕРІР°РЅРЅРѕР№ РІ РїСЂРѕС€Р»РѕРј РІС‹РїСѓСЃРєРµ Р¶СѓСЂРЅР°Р»Р°
+СЃС‚Р°С‚СЊРё Рѕ РєРѕРґРёСЂРѕРІР°РЅРёРё РҐР°С„РјР°РЅР°. Р’ РїСЂРѕС€Р»РѕР№
+С‡Р°СЃС‚Рё РјС‹ СЂР°СЃСЃРјРѕС‚СЂРµР»Рё Р°Р»РіРѕСЂРёС‚Рј РєРѕРґРёСЂРѕРІР°РЅРёСЏ,
+РѕРїРёСЃР°Р»Рё РµРіРѕ РјР°С‚РµРјР°С‚РёС‡РµСЃРєСѓСЋ РјРѕРґРµР»СЊ,
+РїСЂРѕРёР·РІРµР»Рё РєРѕРґРёСЂРѕРІР°РЅРёРµ Рё РґРµРєРѕРґРёСЂРѕРІР°РЅРёРµ РЅР°
+РєРѕРЅСЂРµС‚РЅРѕРј РїСЂРёРјРµСЂРµ, СЂР°СЃСЃС‡РёС‚Р°Р»Рё СЃСЂРµРґРЅСЋСЋ
+РґР»РёРЅСѓ РєРѕРґРѕРІРѕРіРѕ СЃР»РѕРІР°, Р° С‚Р°РєР¶Рµ РѕРїСЂРµРґРµР»РёР»Рё
+РєРѕСЌС„С„РёС†РёРµРЅС‚ СЃР¶Р°С‚РёСЏ. РљСЂРѕРјРµ СЌС‚РѕРіРѕ, Р±С‹Р»Рё
+СЃРґРµР»Р°РЅС‹ РІС‹РІРѕРґС‹ Рѕ РїСЂРµРёРјСѓС‰РµСЃС‚РІР°С… Рё
+РЅРµРґРѕСЃС‚Р°С‚РєР°С… РґР°РЅРЅРѕРіРѕ Р°Р»РіРѕСЂРёС‚РјР°.</p>
+<p>РћРґРЅР°РєРѕ, РїРѕРјРёРјРѕ СЌС‚РѕРіРѕ РЅРµСЂР°Р·СЂРµС€С‘РЅРЅС‹РјРё
+РѕСЃС‚Р°Р»РёСЃСЊ РµС‰С‘ РґРІР° РІРѕРїСЂРѕСЃР°: СЂРµР°Р»РёР·Р°С†РёСЏ
+РїСЂРѕРіСЂР°РјРјС‹, СЃР¶РёРјР°СЋС‰РµР№ С„Р°Р№Р» РґР°РЅРЅС‹С…, Рё
+РїСЂРѕРіСЂР°РјРјС‹, СЂР°СЃРїР°РєРѕРІС‹РІР°СЋС‰РµР№ СЃР¶Р°С‚С‹Р№ С„Р°Р№Р».
+РџРµСЂРІРѕРјСѓ РІРѕРїСЂРѕСЃСѓ Рё РїРѕСЃРІСЏС‰РµРЅР° РЅР°СЃС‚РѕСЏС‰Р°СЏ
+СЃС‚Р°С‚СЊСЏ. РџРѕСЌС‚РѕРјСѓ СЃР»РµРґСѓРµС‚ Р·Р°РЅСЏС‚СЊСЃСЏ
+РїСЂРѕРµРєС‚РёСЂРѕРІР°РЅРёРµРј.</p>
+<h3>РџСЂРѕРµРєС‚РёСЂРѕРІР°РЅРёРµ</h3>
+<p>РџРµСЂРІС‹Рј РґРµР»РѕРј РЅРµРѕР±С…РѕРґРёРјРѕ РїРѕСЃС‡РёС‚Р°С‚СЊ
+С‡Р°СЃС‚РѕС‚С‹ РІС…РѕР¶РґРµРЅРёСЏ СЃРёРјРІРѕР»РѕРІ РІ С„Р°Р№Р». Р”Р»СЏ
+СЌС‚РѕРіРѕ РѕРїРёС€РµРј СЃР»РµРґСѓСЋС‰СѓСЋ СЃС‚СЂСѓРєС‚СѓСЂСѓ:</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Структура для подсчёта частоты символа</font></p>
+<p><font face="Courier New">// РЎС‚СЂСѓРєС‚СѓСЂР° РґР»СЏ РїРѕРґСЃС‡С‘С‚Р° С‡Р°СЃС‚РѕС‚С‹ СЃРёРјРІРѕР»Р°</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">typedef struct </font> </font></b><font SIZE="2"><font face="Courier New">TFreq</font></p>
 <p><font face="Courier New">{</font></p>
@@ -52,12 +52,12 @@ body         { font-size: 12pt }
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable&nbsp;&nbsp;&nbsp;&nbsp; *table;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; freq;</font></p>
 <p><font face="Courier New">} TFreq;</font></p>
-</font><p>Эта структура будет описывать каждый
-символ из 256. ch - сам ASCII-символ, freq -
-количество вхождений символа в файл. Поле
-table - указатель на структуру:</p>
+</font><p>Р­С‚Р° СЃС‚СЂСѓРєС‚СѓСЂР° Р±СѓРґРµС‚ РѕРїРёСЃС‹РІР°С‚СЊ РєР°Р¶РґС‹Р№
+СЃРёРјРІРѕР» РёР· 256. ch - СЃР°Рј ASCII-СЃРёРјРІРѕР», freq -
+РєРѕР»РёС‡РµСЃС‚РІРѕ РІС…РѕР¶РґРµРЅРёР№ СЃРёРјРІРѕР»Р° РІ С„Р°Р№Р». РџРѕР»Рµ
+table - СѓРєР°Р·Р°С‚РµР»СЊ РЅР° СЃС‚СЂСѓРєС‚СѓСЂСѓ:</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Описатель узла</font></p>
+<p><font face="Courier New">// РћРїРёСЃР°С‚РµР»СЊ СѓР·Р»Р°</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">typedef struct </font> </font></b><font SIZE="2"><font face="Courier New">TTable</font></p>
 <p><font face="Courier New">{</font></p>
@@ -66,88 +66,88 @@ table - указатель на структуру:</p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable&nbsp;&nbsp;&nbsp;&nbsp; *left;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable&nbsp;&nbsp;&nbsp;&nbsp; *right;</font></p>
 <p><font face="Courier New">} TTable;</font></p>
-</font><p>Как видно, TTable - это описатель узла с
-разветвлением по нулю и единице. При помощи
-этих структур в дальнейшем и будет
-осуществляться построение дерева
-компрессии. Теперь объявим для каждого
-символа свою частоту и свой узел:</p>
+</font><p>РљР°Рє РІРёРґРЅРѕ, TTable - СЌС‚Рѕ РѕРїРёСЃР°С‚РµР»СЊ СѓР·Р»Р° СЃ
+СЂР°Р·РІРµС‚РІР»РµРЅРёРµРј РїРѕ РЅСѓР»СЋ Рё РµРґРёРЅРёС†Рµ. РџСЂРё РїРѕРјРѕС‰Рё
+СЌС‚РёС… СЃС‚СЂСѓРєС‚СѓСЂ РІ РґР°Р»СЊРЅРµР№С€РµРј Рё Р±СѓРґРµС‚
+РѕСЃСѓС‰РµСЃС‚РІР»СЏС‚СЊСЃСЏ РїРѕСЃС‚СЂРѕРµРЅРёРµ РґРµСЂРµРІР°
+РєРѕРјРїСЂРµСЃСЃРёРё. РўРµРїРµСЂСЊ РѕР±СЉСЏРІРёРј РґР»СЏ РєР°Р¶РґРѕРіРѕ
+СЃРёРјРІРѕР»Р° СЃРІРѕСЋ С‡Р°СЃС‚РѕС‚Сѓ Рё СЃРІРѕР№ СѓР·РµР»:</p>
 <p><font face="Courier New"><font SIZE="2">TFreq&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[</font><font SIZE="2" COLOR="#008000">256</font><font SIZE="2">];</font></font></p>
-<p>Попробуем разобраться, каким образом
-будет осуществляться построение дерева. На
-начальной стадии программа должна
-осуществить проход по всему файлу и
-подсчитать количество вхождений символов в
-него. Помимо этого, для каждого найденного
-символа программа должна создать описатель
-узла. После этого из созданных узлов с
-учётом частоты символов программа строит
-дерево, размещая узлы в определённом
-порядке и устанавливая между ними связи.</p>
-<p>Построенное дерево хорошо для
-декодирования файла. Но для кодирования
-файла оно неудобно, потому что неизвестно, в
-каком направлении следует идти от корня,
-чтобы добраться до необходимого символа.
-Для этого удобнее построить таблицу
-преобразования символов в код. Поэтому
-определим ещё одну структуру:</p>
+<p>РџРѕРїСЂРѕР±СѓРµРј СЂР°Р·РѕР±СЂР°С‚СЊСЃСЏ, РєР°РєРёРј РѕР±СЂР°Р·РѕРј
+Р±СѓРґРµС‚ РѕСЃСѓС‰РµСЃС‚РІР»СЏС‚СЊСЃСЏ РїРѕСЃС‚СЂРѕРµРЅРёРµ РґРµСЂРµРІР°. РќР°
+РЅР°С‡Р°Р»СЊРЅРѕР№ СЃС‚Р°РґРёРё РїСЂРѕРіСЂР°РјРјР° РґРѕР»Р¶РЅР°
+РѕСЃСѓС‰РµСЃС‚РІРёС‚СЊ РїСЂРѕС…РѕРґ РїРѕ РІСЃРµРјСѓ С„Р°Р№Р»Сѓ Рё
+РїРѕРґСЃС‡РёС‚Р°С‚СЊ РєРѕР»РёС‡РµСЃС‚РІРѕ РІС…РѕР¶РґРµРЅРёР№ СЃРёРјРІРѕР»РѕРІ РІ
+РЅРµРіРѕ. РџРѕРјРёРјРѕ СЌС‚РѕРіРѕ, РґР»СЏ РєР°Р¶РґРѕРіРѕ РЅР°Р№РґРµРЅРЅРѕРіРѕ
+СЃРёРјРІРѕР»Р° РїСЂРѕРіСЂР°РјРјР° РґРѕР»Р¶РЅР° СЃРѕР·РґР°С‚СЊ РѕРїРёСЃР°С‚РµР»СЊ
+СѓР·Р»Р°. РџРѕСЃР»Рµ СЌС‚РѕРіРѕ РёР· СЃРѕР·РґР°РЅРЅС‹С… СѓР·Р»РѕРІ СЃ
+СѓС‡С‘С‚РѕРј С‡Р°СЃС‚РѕС‚С‹ СЃРёРјРІРѕР»РѕРІ РїСЂРѕРіСЂР°РјРјР° СЃС‚СЂРѕРёС‚
+РґРµСЂРµРІРѕ, СЂР°Р·РјРµС‰Р°СЏ СѓР·Р»С‹ РІ РѕРїСЂРµРґРµР»С‘РЅРЅРѕРј
+РїРѕСЂСЏРґРєРµ Рё СѓСЃС‚Р°РЅР°РІР»РёРІР°СЏ РјРµР¶РґСѓ РЅРёРјРё СЃРІСЏР·Рё.</p>
+<p>РџРѕСЃС‚СЂРѕРµРЅРЅРѕРµ РґРµСЂРµРІРѕ С…РѕСЂРѕС€Рѕ РґР»СЏ
+РґРµРєРѕРґРёСЂРѕРІР°РЅРёСЏ С„Р°Р№Р»Р°. РќРѕ РґР»СЏ РєРѕРґРёСЂРѕРІР°РЅРёСЏ
+С„Р°Р№Р»Р° РѕРЅРѕ РЅРµСѓРґРѕР±РЅРѕ, РїРѕС‚РѕРјСѓ С‡С‚Рѕ РЅРµРёР·РІРµСЃС‚РЅРѕ, РІ
+РєР°РєРѕРј РЅР°РїСЂР°РІР»РµРЅРёРё СЃР»РµРґСѓРµС‚ РёРґС‚Рё РѕС‚ РєРѕСЂРЅСЏ,
+С‡С‚РѕР±С‹ РґРѕР±СЂР°С‚СЊСЃСЏ РґРѕ РЅРµРѕР±С…РѕРґРёРјРѕРіРѕ СЃРёРјРІРѕР»Р°.
+Р”Р»СЏ СЌС‚РѕРіРѕ СѓРґРѕР±РЅРµРµ РїРѕСЃС‚СЂРѕРёС‚СЊ С‚Р°Р±Р»РёС†Сѓ
+РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ СЃРёРјРІРѕР»РѕРІ РІ РєРѕРґ. РџРѕСЌС‚РѕРјСѓ
+РѕРїСЂРµРґРµР»РёРј РµС‰С‘ РѕРґРЅСѓ СЃС‚СЂСѓРєС‚СѓСЂСѓ:</p>
 <font SIZE="2"><i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Описатель кодового символа</font></p>
+<p><font face="Courier New">// РћРїРёСЃР°С‚РµР»СЊ РєРѕРґРѕРІРѕРіРѕ СЃРёРјРІРѕР»Р°</font></p>
 </font></i><b>
 <p><font face="Courier New">typedef struct </font> </b><font face="Courier New">TOpcode</font></p>
 <p><font face="Courier New">{</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; opcode;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; len;</font></p>
 <p><font face="Courier New">} TOpcode;</font></p>
-</font><p>Здесь opcode - кодовая комбинация символа,
-а len - её длина (в битах). И объявим таблицу из
-256 таких структур:</p>
+</font><p>Р—РґРµСЃСЊ opcode - РєРѕРґРѕРІР°СЏ РєРѕРјР±РёРЅР°С†РёСЏ СЃРёРјРІРѕР»Р°,
+Р° len - РµС‘ РґР»РёРЅР° (РІ Р±РёС‚Р°С…). Р РѕР±СЉСЏРІРёРј С‚Р°Р±Р»РёС†Сѓ РёР·
+256 С‚Р°РєРёС… СЃС‚СЂСѓРєС‚СѓСЂ:</p>
 <p><font SIZE="2">TOpcode&nbsp;&nbsp;&nbsp;&nbsp; Opcodes[</font><font SIZE="2" COLOR="#008000">256</font><font SIZE="2">];</font></p>
-<p>Зная кодируемый символ, можно определить
-его кодовое слово по таблице. Теперь
-перейдём непосредственно к подсчёту частот
-символов (и не только).</p>
-<h3>Подсчёт частот символов</h3>
-<p>В принципе, это действие не составляет
-труда. Достаточно открыть файл и подсчитать
-в нём число символов, заполнив
-соответствующие структуры. Посмотрим
-реализацию этого действия.</p>
-<p>Для этого объявим глобальные дескрипторы
-файлов:</p>
+<p>Р—РЅР°СЏ РєРѕРґРёСЂСѓРµРјС‹Р№ СЃРёРјРІРѕР», РјРѕР¶РЅРѕ РѕРїСЂРµРґРµР»РёС‚СЊ
+РµРіРѕ РєРѕРґРѕРІРѕРµ СЃР»РѕРІРѕ РїРѕ С‚Р°Р±Р»РёС†Рµ. РўРµРїРµСЂСЊ
+РїРµСЂРµР№РґС‘Рј РЅРµРїРѕСЃСЂРµРґСЃС‚РІРµРЅРЅРѕ Рє РїРѕРґСЃС‡С‘С‚Сѓ С‡Р°СЃС‚РѕС‚
+СЃРёРјРІРѕР»РѕРІ (Рё РЅРµ С‚РѕР»СЊРєРѕ).</p>
+<h3>РџРѕРґСЃС‡С‘С‚ С‡Р°СЃС‚РѕС‚ СЃРёРјРІРѕР»РѕРІ</h3>
+<p>Р’ РїСЂРёРЅС†РёРїРµ, СЌС‚Рѕ РґРµР№СЃС‚РІРёРµ РЅРµ СЃРѕСЃС‚Р°РІР»СЏРµС‚
+С‚СЂСѓРґР°. Р”РѕСЃС‚Р°С‚РѕС‡РЅРѕ РѕС‚РєСЂС‹С‚СЊ С„Р°Р№Р» Рё РїРѕРґСЃС‡РёС‚Р°С‚СЊ
+РІ РЅС‘Рј С‡РёСЃР»Рѕ СЃРёРјРІРѕР»РѕРІ, Р·Р°РїРѕР»РЅРёРІ
+СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёРµ СЃС‚СЂСѓРєС‚СѓСЂС‹. РџРѕСЃРјРѕС‚СЂРёРј
+СЂРµР°Р»РёР·Р°С†РёСЋ СЌС‚РѕРіРѕ РґРµР№СЃС‚РІРёСЏ.</p>
+<p>Р”Р»СЏ СЌС‚РѕРіРѕ РѕР±СЉСЏРІРёРј РіР»РѕР±Р°Р»СЊРЅС‹Рµ РґРµСЃРєСЂРёРїС‚РѕСЂС‹
+С„Р°Р№Р»РѕРІ:</p>
 <p><font face="Courier New">FILE *in, *out, *assemb;</font></p>
-<p>in - файл, из которого осуществляется
-чтение несжатых данных.</p>
-<p>out - файл, в который осуществляется запись
-сжатых данных.</p>
-<p>assemb - файл, в который будет сохранено
-дерево в удобном для распаковки виде. Так
-как распаковщик будет написан на
-ассемблере, то вполне рационально дерево
-сделать частью распаковщика, т.е.
-представить его в виде инструкций на
-Ассемблере.</p>
-<p>Первым делом необходимо
-проинициализировать все структуры
-нулевыми значениями:</p>
+<p>in - С„Р°Р№Р», РёР· РєРѕС‚РѕСЂРѕРіРѕ РѕСЃСѓС‰РµСЃС‚РІР»СЏРµС‚СЃСЏ
+С‡С‚РµРЅРёРµ РЅРµСЃР¶Р°С‚С‹С… РґР°РЅРЅС‹С….</p>
+<p>out - С„Р°Р№Р», РІ РєРѕС‚РѕСЂС‹Р№ РѕСЃСѓС‰РµСЃС‚РІР»СЏРµС‚СЃСЏ Р·Р°РїРёСЃСЊ
+СЃР¶Р°С‚С‹С… РґР°РЅРЅС‹С….</p>
+<p>assemb - С„Р°Р№Р», РІ РєРѕС‚РѕСЂС‹Р№ Р±СѓРґРµС‚ СЃРѕС…СЂР°РЅРµРЅРѕ
+РґРµСЂРµРІРѕ РІ СѓРґРѕР±РЅРѕРј РґР»СЏ СЂР°СЃРїР°РєРѕРІРєРё РІРёРґРµ. РўР°Рє
+РєР°Рє СЂР°СЃРїР°РєРѕРІС‰РёРє Р±СѓРґРµС‚ РЅР°РїРёСЃР°РЅ РЅР°
+Р°СЃСЃРµРјР±Р»РµСЂРµ, С‚Рѕ РІРїРѕР»РЅРµ СЂР°С†РёРѕРЅР°Р»СЊРЅРѕ РґРµСЂРµРІРѕ
+СЃРґРµР»Р°С‚СЊ С‡Р°СЃС‚СЊСЋ СЂР°СЃРїР°РєРѕРІС‰РёРєР°, С‚.Рµ.
+РїСЂРµРґСЃС‚Р°РІРёС‚СЊ РµРіРѕ РІ РІРёРґРµ РёРЅСЃС‚СЂСѓРєС†РёР№ РЅР°
+РђСЃСЃРµРјР±Р»РµСЂРµ.</p>
+<p>РџРµСЂРІС‹Рј РґРµР»РѕРј РЅРµРѕР±С…РѕРґРёРјРѕ
+РїСЂРѕРёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°С‚СЊ РІСЃРµ СЃС‚СЂСѓРєС‚СѓСЂС‹
+РЅСѓР»РµРІС‹РјРё Р·РЅР°С‡РµРЅРёСЏРјРё:</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Подсчёт частот символов</font></p>
+<p><font face="Courier New">// РџРѕРґСЃС‡С‘С‚ С‡Р°СЃС‚РѕС‚ СЃРёРјРІРѕР»РѕРІ</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">int </font> </font></b><font SIZE="2"><font face="Courier New">CountFrequency(<b>void</b>)</font></p>
 <p><font face="Courier New">{</font></p>
-<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </b><font face="Courier New">i;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font></font><i><font size="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;// переменная цикла</font></p>
+<p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </b><font face="Courier New">i;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</font></font><i><font size="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;// РїРµСЂРµРјРµРЅРЅР°СЏ С†РёРєР»Р°</font></p>
 </font>
 </i>
 <p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </font></b><font face="Courier New"><font SIZE="2">count=</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;</font></font><i><font size="2" COLOR="#ff0000"><font face="Courier New">
 &nbsp;&nbsp;&nbsp;&nbsp;
-// вторая переменная
-цикла</font></p>
+// РІС‚РѕСЂР°СЏ РїРµСЂРµРјРµРЅРЅР°СЏ
+С†РёРєР»Р°</font></p>
 </font>
 </i>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD TotalCount=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;
-</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// размер файла.</font></p>
-<p><font face="Courier New">&nbsp;&nbsp;&nbsp; // Инициализация структур</font></p>
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// СЂР°Р·РјРµСЂ С„Р°Р№Р»Р°.</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp; // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ СЃС‚СЂСѓРєС‚СѓСЂ</font></p>
 </i></font>
 <p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; for </font> </font></b><font face="Courier New"><font SIZE="2">(i=</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;
 i&lt;</font><font SIZE="2" COLOR="#008000">256</font></font><font SIZE="2"><font face="Courier New">; i++)</font></p>
@@ -156,137 +156,137 @@ i&lt;</font><font SIZE="2" COLOR="#008000">256</font></font><font SIZE="2"><font
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].table=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].ch=i;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
-</font><p>После этого мы подсчитываем число
-вхождений символа в файл и размер файла (конечно,
-не самым идеальным способом, но в примере
-нужна наглядность):</p>
+</font><p>РџРѕСЃР»Рµ СЌС‚РѕРіРѕ РјС‹ РїРѕРґСЃС‡РёС‚С‹РІР°РµРј С‡РёСЃР»Рѕ
+РІС…РѕР¶РґРµРЅРёР№ СЃРёРјРІРѕР»Р° РІ С„Р°Р№Р» Рё СЂР°Р·РјРµСЂ С„Р°Р№Р»Р° (РєРѕРЅРµС‡РЅРѕ,
+РЅРµ СЃР°РјС‹Рј РёРґРµР°Р»СЊРЅС‹Рј СЃРїРѕСЃРѕР±РѕРј, РЅРѕ РІ РїСЂРёРјРµСЂРµ
+РЅСѓР¶РЅР° РЅР°РіР»СЏРґРЅРѕСЃС‚СЊ):</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p>&nbsp;<font face="Courier New">&nbsp;&nbsp; // Подсчёт частот символов (посимвольно)</font></p>
+<p>&nbsp;<font face="Courier New">&nbsp;&nbsp; // РџРѕРґСЃС‡С‘С‚ С‡Р°СЃС‚РѕС‚ СЃРёРјРІРѕР»РѕРІ (РїРѕСЃРёРјРІРѕР»СЊРЅРѕ)</font></p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; while
 </font> </font></b><font SIZE="2">(!feof(in))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// пока не достигнут
-конец файла</font></p>
+</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// РїРѕРєР° РЅРµ РґРѕСЃС‚РёРіРЅСѓС‚
+РєРѕРЅРµС† С„Р°Р№Р»Р°</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; i=fgetc(in);</font></p>
 <p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if </font> </b><font face="Courier New">(i!=EOF)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// если не конец файла</font></p>
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// РµСЃР»Рё РЅРµ РєРѕРЅРµС† С„Р°Р№Р»Р°</font></p>
 </font></i>
 <p><font size="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].freq++;
 </font>
-</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// частота ++</font></p>
+</font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// С‡Р°СЃС‚РѕС‚Р° ++</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 TotalCount++;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-размер ++</font></p>
+СЂР°Р·РјРµСЂ ++</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
-</font><p>Так как код неравномерный, то
-распаковщику будет проблематично узнать
-число считываемых символов. Поэтому в
-таблице распаковки необходимо
-зафиксировать его размер:</p>
+</font><p>РўР°Рє РєР°Рє РєРѕРґ РЅРµСЂР°РІРЅРѕРјРµСЂРЅС‹Р№, С‚Рѕ
+СЂР°СЃРїР°РєРѕРІС‰РёРєСѓ Р±СѓРґРµС‚ РїСЂРѕР±Р»РµРјР°С‚РёС‡РЅРѕ СѓР·РЅР°С‚СЊ
+С‡РёСЃР»Рѕ СЃС‡РёС‚С‹РІР°РµРјС‹С… СЃРёРјРІРѕР»РѕРІ. РџРѕСЌС‚РѕРјСѓ РІ
+С‚Р°Р±Р»РёС†Рµ СЂР°СЃРїР°РєРѕРІРєРё РЅРµРѕР±С…РѕРґРёРјРѕ
+Р·Р°С„РёРєСЃРёСЂРѕРІР°С‚СЊ РµРіРѕ СЂР°Р·РјРµСЂ:</p>
 
 <font SIZE="2" COLOR="#ffffff">
-<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // &quot;Сообщаем&quot;
-распаковщику размер файла</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // &quot;РЎРѕРѕР±С‰Р°РµРј&quot;
+СЂР°СЃРїР°РєРѕРІС‰РёРєСѓ СЂР°Р·РјРµСЂ С„Р°Р№Р»Р°</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; fprintf(assemb,
 </font> </font><font SIZE="2" COLOR="#000080">&quot;coded_file_size:\n
 dd %8lxh\n\n&quot;</font><font SIZE="2"><font face="Courier New">, TotalCount);</font></p>
-</font><p>После этого все используемые символы
-смещаются в начало массива, а
-неиспользуемые затираются (путём
-перестановок).</p>
+</font><p>РџРѕСЃР»Рµ СЌС‚РѕРіРѕ РІСЃРµ РёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ СЃРёРјРІРѕР»С‹
+СЃРјРµС‰Р°СЋС‚СЃСЏ РІ РЅР°С‡Р°Р»Рѕ РјР°СЃСЃРёРІР°, Р°
+РЅРµРёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ Р·Р°С‚РёСЂР°СЋС‚СЃСЏ (РїСѓС‚С‘Рј
+РїРµСЂРµСЃС‚Р°РЅРѕРІРѕРє).</p>
 
 <font SIZE="2" COLOR="#ffffff">
-<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // смещаем
-все неиспользуемые символы в конец</font></p>
+<p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // СЃРјРµС‰Р°РµРј
+РІСЃРµ РЅРµРёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ СЃРёРјРІРѕР»С‹ РІ РєРѕРЅРµС†</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; i=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; count=</font></font><font SIZE="2" COLOR="#008000">256</font><font SIZE="2"><font face="Courier New">;</font></p>
 <p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; while </font> </b><font face="Courier New">(i&lt;count)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-пока не достигли конца</font></p>
+РїРѕРєР° РЅРµ РґРѕСЃС‚РёРіР»Рё РєРѕРЅС†Р°</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><b><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if </font> </b><font face="Courier New">(Freq[i].freq==</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">)&nbsp;&nbsp;&nbsp;&nbsp;
-</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// если частота 0</font></p>
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// РµСЃР»Рё С‡Р°СЃС‚РѕС‚Р° 0</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-Freq[i]=Freq[--count]; </font> </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// то
-копируем запись из конца</font></p>
+Freq[i]=Freq[--count]; </font> </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// С‚Рѕ
+РєРѕРїРёСЂСѓРµРј Р·Р°РїРёСЃСЊ РёР· РєРѕРЅС†Р°</font></p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</font></p>
 <p></font></b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 i++;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// всё ОК -
-двигаемся дальше.</font></p>
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// РІСЃС‘ РћРљ -
+РґРІРёРіР°РµРјСЃСЏ РґР°Р»СЊС€Рµ.</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
-</font><p>И только после такой &quot;сортировки&quot;
-выделяется память под узлы (для некоторой
-экономии).</p>
+</font><p>Р С‚РѕР»СЊРєРѕ РїРѕСЃР»Рµ С‚Р°РєРѕР№ &quot;СЃРѕСЂС‚РёСЂРѕРІРєРё&quot;
+РІС‹РґРµР»СЏРµС‚СЃСЏ РїР°РјСЏС‚СЊ РїРѕРґ СѓР·Р»С‹ (РґР»СЏ РЅРµРєРѕС‚РѕСЂРѕР№
+СЌРєРѕРЅРѕРјРёРё).</p>
 
 <font SIZE="2" COLOR="#ffffff">
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
-// Выделяем память под узлы</font></p>
+// Р’С‹РґРµР»СЏРµРј РїР°РјСЏС‚СЊ РїРѕРґ СѓР·Р»С‹</font></p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; for </font></font></b><font face="Courier New"><font SIZE="2">(i=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">;
 i&lt;count; i++)</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Freq[i].table=<b>new
 </b>TTable;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-создаём узел</font></p>
+СЃРѕР·РґР°С‘Рј СѓР·РµР»</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[i].table-&gt;left=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-без соединений</font></p>
+Р±РµР· СЃРѕРµРґРёРЅРµРЅРёР№</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[i].table-&gt;right=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-без соединений</font></p>
+Р±РµР· СЃРѕРµРґРёРЅРµРЅРёР№</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[i].table-&gt;ch=Freq[i].ch;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-копируем символ</font></p>
+РєРѕРїРёСЂСѓРµРј СЃРёРјРІРѕР»</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[i].freq=Freq[i].freq;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-и частоту</font></p>
+Рё С‡Р°СЃС‚РѕС‚Сѓ</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
 <p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; return </b>count;</font></p>
 <p><font face="Courier New">}</font></p>
 </font>
-<p>Таким образом, мы написали функцию
-первоначальной иницализации системы, или,
-если смотреть на алгоритм в первой части
-статьи, &quot;записали используемые символы в
-столбик и приписали к ним вероятности&quot;, а
-также для каждого символа создали &quot;отправную
-точку&quot; - узел - и проинициализировали её. В
-поля left и right&nbsp;записали нули. Таким образом,
-если узел будет в дереве последним, то это
-будет легко увидеть по left и right, равным нулю.</p>
+<p>РўР°РєРёРј РѕР±СЂР°Р·РѕРј, РјС‹ РЅР°РїРёСЃР°Р»Рё С„СѓРЅРєС†РёСЋ
+РїРµСЂРІРѕРЅР°С‡Р°Р»СЊРЅРѕР№ РёРЅРёС†Р°Р»РёР·Р°С†РёРё СЃРёСЃС‚РµРјС‹, РёР»Рё,
+РµСЃР»Рё СЃРјРѕС‚СЂРµС‚СЊ РЅР° Р°Р»РіРѕСЂРёС‚Рј РІ РїРµСЂРІРѕР№ С‡Р°СЃС‚Рё
+СЃС‚Р°С‚СЊРё, &quot;Р·Р°РїРёСЃР°Р»Рё РёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ СЃРёРјРІРѕР»С‹ РІ
+СЃС‚РѕР»Р±РёРє Рё РїСЂРёРїРёСЃР°Р»Рё Рє РЅРёРј РІРµСЂРѕСЏС‚РЅРѕСЃС‚Рё&quot;, Р°
+С‚Р°РєР¶Рµ РґР»СЏ РєР°Р¶РґРѕРіРѕ СЃРёРјРІРѕР»Р° СЃРѕР·РґР°Р»Рё &quot;РѕС‚РїСЂР°РІРЅСѓСЋ
+С‚РѕС‡РєСѓ&quot; - СѓР·РµР» - Рё РїСЂРѕРёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°Р»Рё РµС‘. Р’
+РїРѕР»СЏ left Рё right&nbsp;Р·Р°РїРёСЃР°Р»Рё РЅСѓР»Рё. РўР°РєРёРј РѕР±СЂР°Р·РѕРј,
+РµСЃР»Рё СѓР·РµР» Р±СѓРґРµС‚ РІ РґРµСЂРµРІРµ РїРѕСЃР»РµРґРЅРёРј, С‚Рѕ СЌС‚Рѕ
+Р±СѓРґРµС‚ Р»РµРіРєРѕ СѓРІРёРґРµС‚СЊ РїРѕ left Рё right, СЂР°РІРЅС‹Рј РЅСѓР»СЋ.</p>
 
-<h3>Создание дерева</h3>
+<h3>РЎРѕР·РґР°РЅРёРµ РґРµСЂРµРІР°</h3>
 
-<p>Итак, в предыдущем разделе мы &quot;записали
-используемые символы в столбик и приписали
-к ним вероятности&quot;. На самом деле, мы
-приписали к ним не вероятности, а числители
-дроби (т.е. количество вхождений символов в
-файл). Теперь надо построить дерево. Но для
-того, чтобы это сделать, необходимо найти
-минимальный элемент в списке. Для этого
-вводим функцию, в которую передаём два
-параметра - количество элементов в списке и
-элемент, который следует исключить (потому
-что искать будем парами, и будет очень
-неприятно, если мы от функции дважды
-получим один и тот же элемент):</p>
+<p>РС‚Р°Рє, РІ РїСЂРµРґС‹РґСѓС‰РµРј СЂР°Р·РґРµР»Рµ РјС‹ &quot;Р·Р°РїРёСЃР°Р»Рё
+РёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ СЃРёРјРІРѕР»С‹ РІ СЃС‚РѕР»Р±РёРє Рё РїСЂРёРїРёСЃР°Р»Рё
+Рє РЅРёРј РІРµСЂРѕСЏС‚РЅРѕСЃС‚Рё&quot;. РќР° СЃР°РјРѕРј РґРµР»Рµ, РјС‹
+РїСЂРёРїРёСЃР°Р»Рё Рє РЅРёРј РЅРµ РІРµСЂРѕСЏС‚РЅРѕСЃС‚Рё, Р° С‡РёСЃР»РёС‚РµР»Рё
+РґСЂРѕР±Рё (С‚.Рµ. РєРѕР»РёС‡РµСЃС‚РІРѕ РІС…РѕР¶РґРµРЅРёР№ СЃРёРјРІРѕР»РѕРІ РІ
+С„Р°Р№Р»). РўРµРїРµСЂСЊ РЅР°РґРѕ РїРѕСЃС‚СЂРѕРёС‚СЊ РґРµСЂРµРІРѕ. РќРѕ РґР»СЏ
+С‚РѕРіРѕ, С‡С‚РѕР±С‹ СЌС‚Рѕ СЃРґРµР»Р°С‚СЊ, РЅРµРѕР±С…РѕРґРёРјРѕ РЅР°Р№С‚Рё
+РјРёРЅРёРјР°Р»СЊРЅС‹Р№ СЌР»РµРјРµРЅС‚ РІ СЃРїРёСЃРєРµ. Р”Р»СЏ СЌС‚РѕРіРѕ
+РІРІРѕРґРёРј С„СѓРЅРєС†РёСЋ, РІ РєРѕС‚РѕСЂСѓСЋ РїРµСЂРµРґР°С‘Рј РґРІР°
+РїР°СЂР°РјРµС‚СЂР° - РєРѕР»РёС‡РµСЃС‚РІРѕ СЌР»РµРјРµРЅС‚РѕРІ РІ СЃРїРёСЃРєРµ Рё
+СЌР»РµРјРµРЅС‚, РєРѕС‚РѕСЂС‹Р№ СЃР»РµРґСѓРµС‚ РёСЃРєР»СЋС‡РёС‚СЊ (РїРѕС‚РѕРјСѓ
+С‡С‚Рѕ РёСЃРєР°С‚СЊ Р±СѓРґРµРј РїР°СЂР°РјРё, Рё Р±СѓРґРµС‚ РѕС‡РµРЅСЊ
+РЅРµРїСЂРёСЏС‚РЅРѕ, РµСЃР»Рё РјС‹ РѕС‚ С„СѓРЅРєС†РёРё РґРІР°Р¶РґС‹
+РїРѕР»СѓС‡РёРј РѕРґРёРЅ Рё С‚РѕС‚ Р¶Рµ СЌР»РµРјРµРЅС‚):</p>
 
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// поиск узла с наименьшей
-вероятностью.</font></p>
+<p><font face="Courier New">// РїРѕРёСЃРє СѓР·Р»Р° СЃ РЅР°РёРјРµРЅСЊС€РµР№
+РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊСЋ.</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">int </font></font></b><font SIZE="2"><font face="Courier New">FindLeast(<b>int
 </b>count, <b>int </b>index)</font></p>
@@ -295,180 +295,180 @@ Freq[i].freq=Freq[i].freq;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" 
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; DWORD min=(index==</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">)
 ? </font><font SIZE="2" COLOR="#008000">1 </font><font SIZE="2">: </font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-элемент, который считаем</font></p>
+СЌР»РµРјРµРЅС‚, РєРѕС‚РѕСЂС‹Р№ СЃС‡РёС‚Р°РµРј</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-// минимальным</font></p>
+// РјРёРЅРёРјР°Р»СЊРЅС‹Рј</font></p>
 </i></font>
 <p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; for </font></font></b><font face="Courier New"><font SIZE="2">(i=</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;
 i&lt;count; i++)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-цикл по массиву</font></p>
+С†РёРєР» РїРѕ РјР°СЃСЃРёРІСѓ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if </b>(i!=index)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-если элемент не исключён</font></p>
+РµСЃР»Рё СЌР»РµРјРµРЅС‚ РЅРµ РёСЃРєР»СЋС‡С‘РЅ</font></p>
 </i></font>
 <p><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 if </font></font></b><font SIZE="2" face="Courier New">(Freq[i].freq&lt;Freq[min].freq)
 </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-сравниваем</font></p>
+СЃСЂР°РІРЅРёРІР°РµРј</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 min=i;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-меньше минимума - запоминаем</font></p>
+РјРµРЅСЊС€Рµ РјРёРЅРёРјСѓРјР° - Р·Р°РїРѕРјРёРЅР°РµРј</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
 <p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; return </b>min;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-возвращаем индекс минимума</font></p>
+РІРѕР·РІСЂР°С‰Р°РµРј РёРЅРґРµРєСЃ РјРёРЅРёРјСѓРјР°</font></p>
 </i></font><font SIZE="2">
 <p><font face="Courier New">}</font></p>
-</font><p>Поиск реализован несложно: сначала
-выбираем &quot;минимальный&quot; элемент
-массива. Если исключаемый элемент - 0, то
-берём в качестве минимума первый элемент, в
-противном случае минимумом считаем нулевой.
-По мере прохождения по массиву сравниваем
-текущий элемент с &quot;минимальным&quot;, и если
-он окажется меньше, то его помечаем как
-минимальный.</p>
+</font><p>РџРѕРёСЃРє СЂРµР°Р»РёР·РѕРІР°РЅ РЅРµСЃР»РѕР¶РЅРѕ: СЃРЅР°С‡Р°Р»Р°
+РІС‹Р±РёСЂР°РµРј &quot;РјРёРЅРёРјР°Р»СЊРЅС‹Р№&quot; СЌР»РµРјРµРЅС‚
+РјР°СЃСЃРёРІР°. Р•СЃР»Рё РёСЃРєР»СЋС‡Р°РµРјС‹Р№ СЌР»РµРјРµРЅС‚ - 0, С‚Рѕ
+Р±РµСЂС‘Рј РІ РєР°С‡РµСЃС‚РІРµ РјРёРЅРёРјСѓРјР° РїРµСЂРІС‹Р№ СЌР»РµРјРµРЅС‚, РІ
+РїСЂРѕС‚РёРІРЅРѕРј СЃР»СѓС‡Р°Рµ РјРёРЅРёРјСѓРјРѕРј СЃС‡РёС‚Р°РµРј РЅСѓР»РµРІРѕР№.
+РџРѕ РјРµСЂРµ РїСЂРѕС…РѕР¶РґРµРЅРёСЏ РїРѕ РјР°СЃСЃРёРІСѓ СЃСЂР°РІРЅРёРІР°РµРј
+С‚РµРєСѓС‰РёР№ СЌР»РµРјРµРЅС‚ СЃ &quot;РјРёРЅРёРјР°Р»СЊРЅС‹Рј&quot;, Рё РµСЃР»Рё
+РѕРЅ РѕРєР°Р¶РµС‚СЃСЏ РјРµРЅСЊС€Рµ, С‚Рѕ РµРіРѕ РїРѕРјРµС‡Р°РµРј РєР°Рє
+РјРёРЅРёРјР°Р»СЊРЅС‹Р№.</p>
 
-<p>Теперь, собственно говоря, сама функция
-построения дерева:</p>
+<p>РўРµРїРµСЂСЊ, СЃРѕР±СЃС‚РІРµРЅРЅРѕ РіРѕРІРѕСЂСЏ, СЃР°РјР° С„СѓРЅРєС†РёСЏ
+РїРѕСЃС‚СЂРѕРµРЅРёСЏ РґРµСЂРµРІР°:</p>
 
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Функция построения дерева</font></p>
+<p><font face="Courier New">// Р¤СѓРЅРєС†РёСЏ РїРѕСЃС‚СЂРѕРµРЅРёСЏ РґРµСЂРµРІР°</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">PreInit(<b>int
 </b>count)</font></p>
 <p><font face="Courier New">{</font></p>
 <p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; int </b>ind1, ind2; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-индексы элементов</font></p>
+РёРЅРґРµРєСЃС‹ СЌР»РµРјРµРЅС‚РѕРІ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; TTable
 *table;&nbsp; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-указатель на &quot;новый узел&quot;</font></p>
+СѓРєР°Р·Р°С‚РµР»СЊ РЅР° &quot;РЅРѕРІС‹Р№ СѓР·РµР»&quot;</font></p>
 <p></font></i></p>
 <p><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp; while </font></b><font SIZE="2">(count&gt;</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">)
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-цикл, пока не достигли корня</font></p>
+С†РёРєР», РїРѕРєР° РЅРµ РґРѕСЃС‚РёРіР»Рё РєРѕСЂРЅСЏ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ind1=FindLeast(count,-</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">);&nbsp;&nbsp;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-первый узел</font></p>
+РїРµСЂРІС‹Р№ СѓР·РµР»</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ind2=FindLeast(count,ind1); </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-второй узел</font></p>
+РІС‚РѕСЂРѕР№ СѓР·РµР»</font></p>
 </font></i>
 <p>&nbsp;</p>
 <p><font SIZE="2" face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 table=<b>new </b>TTable;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-создаём новый узел</font></p>
+СЃРѕР·РґР°С‘Рј РЅРѕРІС‹Р№ СѓР·РµР»</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 table-&gt;ch=-</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// не
-конечный</font></p>
+</font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">// РЅРµ
+РєРѕРЅРµС‡РЅС‹Р№</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 table-&gt;left=Freq[ind1].table;&nbsp; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-0 - узел 1</font></p>
+0 - СѓР·РµР» 1</font></p>
 <p></font></i><font SIZE="2" face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 table-&gt;right=Freq[ind2].table; </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-1 - узел 2</font></p>
+1 - СѓР·РµР» 2</font></p>
 </font></i>
 <p>&nbsp;</p>
 <p><font face="Courier New"><font SIZE="2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[ind1].ch=-</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-модифицируем запись о</font></p>
+РјРѕРґРёС„РёС†РёСЂСѓРµРј Р·Р°РїРёСЃСЊ Рѕ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[ind1].freq+=Freq[ind2].freq; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-частоте для символа</font></p>
+С‡Р°СЃС‚РѕС‚Рµ РґР»СЏ СЃРёРјРІРѕР»Р°</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[ind1].table=table;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-и пишем новый узел</font></p>
+Рё РїРёС€РµРј РЅРѕРІС‹Р№ СѓР·РµР»</font></p>
 </i></font>
 <p></p>
 <p><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 if </font></b><font SIZE="2">(ind2!=(--count))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-если ind2 не последний</font></p>
+РµСЃР»Рё ind2 РЅРµ РїРѕСЃР»РµРґРЅРёР№</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Freq[ind2]=Freq[count];&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-то на его место</font></p>
+С‚Рѕ РЅР° РµРіРѕ РјРµСЃС‚Рѕ</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-// помещаем последний в массиве</font></p>
+// РїРѕРјРµС‰Р°РµРј РїРѕСЃР»РµРґРЅРёР№ РІ РјР°СЃСЃРёРІРµ</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
 <p><font face="Courier New">}</font></p>
-<h3><font face="Courier New">Таблица кодовых символов</font></h3>
+<h3><font face="Courier New">РўР°Р±Р»РёС†Р° РєРѕРґРѕРІС‹С… СЃРёРјРІРѕР»РѕРІ</font></h3>
 </font>
-<p>Итак, дерево в памяти мы построили:
-попарно брали два узла, создавали новый
-узел, в который записывали на них указатели,
-после чего второй узел удаляли из списка, а
-вместо первого узла писали новый с
-разветвлением.</p>
-<p>Теперь возникает ещё одна проблема:
-кодировать по дереву неудобно, потому что
-необходимо точно знать, по какому пути
-находится тот или иной символ. Однако
-проблема решается довольно просто:
-создаётся ещё одна таблица - таблица
-кодовых символов - в неё и записываются
-битовые комбинации всех используемых
-символов. Для этого достаточно однократно
-рекурсивно обойти дерево. Заодно, чтобы
-повторно его не обходить, можно в функцию
-обхода добавить генерацию ассемблерного
-файла для дальнейшего декодирования сжатых
-данных (см. раздел &quot;<b>Проектирование</b>&quot;).</p>
-<p>Собственно, сама функция не сложна. Она
-должна приписывать к кодовой комбинации 0
-или 1, если узел не конечный, в противном
-случае добавить кодовый символ в таблицу.
-Помимо всего этого, сгенерировать
-ассемблерный файл. Рассмотрим эту функцию:</p>
+<p>РС‚Р°Рє, РґРµСЂРµРІРѕ РІ РїР°РјСЏС‚Рё РјС‹ РїРѕСЃС‚СЂРѕРёР»Рё:
+РїРѕРїР°СЂРЅРѕ Р±СЂР°Р»Рё РґРІР° СѓР·Р»Р°, СЃРѕР·РґР°РІР°Р»Рё РЅРѕРІС‹Р№
+СѓР·РµР», РІ РєРѕС‚РѕСЂС‹Р№ Р·Р°РїРёСЃС‹РІР°Р»Рё РЅР° РЅРёС… СѓРєР°Р·Р°С‚РµР»Рё,
+РїРѕСЃР»Рµ С‡РµРіРѕ РІС‚РѕСЂРѕР№ СѓР·РµР» СѓРґР°Р»СЏР»Рё РёР· СЃРїРёСЃРєР°, Р°
+РІРјРµСЃС‚Рѕ РїРµСЂРІРѕРіРѕ СѓР·Р»Р° РїРёСЃР°Р»Рё РЅРѕРІС‹Р№ СЃ
+СЂР°Р·РІРµС‚РІР»РµРЅРёРµРј.</p>
+<p>РўРµРїРµСЂСЊ РІРѕР·РЅРёРєР°РµС‚ РµС‰С‘ РѕРґРЅР° РїСЂРѕР±Р»РµРјР°:
+РєРѕРґРёСЂРѕРІР°С‚СЊ РїРѕ РґРµСЂРµРІСѓ РЅРµСѓРґРѕР±РЅРѕ, РїРѕС‚РѕРјСѓ С‡С‚Рѕ
+РЅРµРѕР±С…РѕРґРёРјРѕ С‚РѕС‡РЅРѕ Р·РЅР°С‚СЊ, РїРѕ РєР°РєРѕРјСѓ РїСѓС‚Рё
+РЅР°С…РѕРґРёС‚СЃСЏ С‚РѕС‚ РёР»Рё РёРЅРѕР№ СЃРёРјРІРѕР». РћРґРЅР°РєРѕ
+РїСЂРѕР±Р»РµРјР° СЂРµС€Р°РµС‚СЃСЏ РґРѕРІРѕР»СЊРЅРѕ РїСЂРѕСЃС‚Рѕ:
+СЃРѕР·РґР°С‘С‚СЃСЏ РµС‰С‘ РѕРґРЅР° С‚Р°Р±Р»РёС†Р° - С‚Р°Р±Р»РёС†Р°
+РєРѕРґРѕРІС‹С… СЃРёРјРІРѕР»РѕРІ - РІ РЅРµС‘ Рё Р·Р°РїРёСЃС‹РІР°СЋС‚СЃСЏ
+Р±РёС‚РѕРІС‹Рµ РєРѕРјР±РёРЅР°С†РёРё РІСЃРµС… РёСЃРїРѕР»СЊР·СѓРµРјС‹С…
+СЃРёРјРІРѕР»РѕРІ. Р”Р»СЏ СЌС‚РѕРіРѕ РґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РѕРґРЅРѕРєСЂР°С‚РЅРѕ
+СЂРµРєСѓСЂСЃРёРІРЅРѕ РѕР±РѕР№С‚Рё РґРµСЂРµРІРѕ. Р—Р°РѕРґРЅРѕ, С‡С‚РѕР±С‹
+РїРѕРІС‚РѕСЂРЅРѕ РµРіРѕ РЅРµ РѕР±С…РѕРґРёС‚СЊ, РјРѕР¶РЅРѕ РІ С„СѓРЅРєС†РёСЋ
+РѕР±С…РѕРґР° РґРѕР±Р°РІРёС‚СЊ РіРµРЅРµСЂР°С†РёСЋ Р°СЃСЃРµРјР±Р»РµСЂРЅРѕРіРѕ
+С„Р°Р№Р»Р° РґР»СЏ РґР°Р»СЊРЅРµР№С€РµРіРѕ РґРµРєРѕРґРёСЂРѕРІР°РЅРёСЏ СЃР¶Р°С‚С‹С…
+РґР°РЅРЅС‹С… (СЃРј. СЂР°Р·РґРµР» &quot;<b>РџСЂРѕРµРєС‚РёСЂРѕРІР°РЅРёРµ</b>&quot;).</p>
+<p>РЎРѕР±СЃС‚РІРµРЅРЅРѕ, СЃР°РјР° С„СѓРЅРєС†РёСЏ РЅРµ СЃР»РѕР¶РЅР°. РћРЅР°
+РґРѕР»Р¶РЅР° РїСЂРёРїРёСЃС‹РІР°С‚СЊ Рє РєРѕРґРѕРІРѕР№ РєРѕРјР±РёРЅР°С†РёРё 0
+РёР»Рё 1, РµСЃР»Рё СѓР·РµР» РЅРµ РєРѕРЅРµС‡РЅС‹Р№, РІ РїСЂРѕС‚РёРІРЅРѕРј
+СЃР»СѓС‡Р°Рµ РґРѕР±Р°РІРёС‚СЊ РєРѕРґРѕРІС‹Р№ СЃРёРјРІРѕР» РІ С‚Р°Р±Р»РёС†Сѓ.
+РџРѕРјРёРјРѕ РІСЃРµРіРѕ СЌС‚РѕРіРѕ, СЃРіРµРЅРµСЂРёСЂРѕРІР°С‚СЊ
+Р°СЃСЃРµРјР±Р»РµСЂРЅС‹Р№ С„Р°Р№Р». Р Р°СЃСЃРјРѕС‚СЂРёРј СЌС‚Сѓ С„СѓРЅРєС†РёСЋ:</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Функция рекурсивного
-обхода дерева</font></p>
+<p><font face="Courier New">// Р¤СѓРЅРєС†РёСЏ СЂРµРєСѓСЂСЃРёРІРЅРѕРіРѕ
+РѕР±С…РѕРґР° РґРµСЂРµРІР°</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">RecurseMake(TTable
 *tbl, DWORD opcode, <b>int </b>len)</font></p>
 <p><font face="Courier New">{</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; fprintf(assemb,</font></font><font face="Courier New"><font SIZE="2" COLOR="#000080">&quot;opcode%08lx_%04x:\n&quot;</font><font SIZE="2">,opcode,len);
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-метку в файл</font></p>
+РјРµС‚РєСѓ РІ С„Р°Р№Р»</font></p>
 <p>&nbsp;</p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; if </font></font></b><font face="Courier New"><font SIZE="2">(tbl-&gt;ch!=-</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">)
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-узел конечный</font></p>
+СѓР·РµР» РєРѕРЅРµС‡РЅС‹Р№</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; BYTE mod=</font></font><font SIZE="2" COLOR="#008000" face="Courier New">32</font><font SIZE="2"><font face="Courier New">-len;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Opcodes[tbl-&gt;ch].opcode=(opcode&gt;&gt;mod);
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-сохраняем код</font></p>
+СЃРѕС…СЂР°РЅСЏРµРј РєРѕРґ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 Opcodes[tbl-&gt;ch].len=len; </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-и его длину (в битах)</font></p>
-<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // и
-создаём соответствующую метку</font></p>
+Рё РµРіРѕ РґР»РёРЅСѓ (РІ Р±РёС‚Р°С…)</font></p>
+<p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Рё
+СЃРѕР·РґР°С‘Рј СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰СѓСЋ РјРµС‚РєСѓ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 fprintf(assemb,</font></font><font SIZE="2" COLOR="#000080" face="Courier New">&quot;
 db %03xh,0ffh,0ffh,0ffh\n\n&quot;</font><font SIZE="2"><font face="Courier New">,tbl-&gt;ch);</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
 <p><font face="Courier New"><b>&nbsp;&nbsp;&nbsp; else </b></font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-узел не конечный</font></p>
+СѓР·РµР» РЅРµ РєРѕРЅРµС‡РЅС‹Р№</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; opcode&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-освобождаем место под новый бит</font></p>
+РѕСЃРІРѕР±РѕР¶РґР°РµРј РјРµСЃС‚Рѕ РїРѕРґ РЅРѕРІС‹Р№ Р±РёС‚</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 len++;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-увеличиваем длину кодового слова</font></p>
+СѓРІРµР»РёС‡РёРІР°РµРј РґР»РёРЅСѓ РєРѕРґРѕРІРѕРіРѕ СЃР»РѕРІР°</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //
-делаем ссылки на метки символов</font></p>
+РґРµР»Р°РµРј СЃСЃС‹Р»РєРё РЅР° РјРµС‚РєРё СЃРёРјРІРѕР»РѕРІ</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 fprintf(assemb,</font></font><font SIZE="2" COLOR="#000080" face="Courier New">&quot;
@@ -476,53 +476,53 @@ dw opcode%08lx_%04x\n&quot;</font><font SIZE="2"><font face="Courier New">,opcod
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; fprintf(assemb,</font></font><font face="Courier New"><font SIZE="2" COLOR="#000080">&quot;
 dw opcode%08lx_%04x\n\n&quot;</font><font SIZE="2">,opcode|</font><font SIZE="2" COLOR="#008000">0x80000000</font></font><font SIZE="2"><font face="Courier New">,len);</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-// Рекурсивный вызов</font></p>
+// Р РµРєСѓСЂСЃРёРІРЅС‹Р№ РІС‹Р·РѕРІ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 RecurseMake(tbl-&gt;left,opcode,len);</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 RecurseMake(tbl-&gt;right,opcode|</font></font><font SIZE="2" COLOR="#008000" face="Courier New">0x80000000</font><font SIZE="2"><font face="Courier New">,len);</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
-// удаляем узел (он уже не нужен)</font></p>
+// СѓРґР°Р»СЏРµРј СѓР·РµР» (РѕРЅ СѓР¶Рµ РЅРµ РЅСѓР¶РµРЅ)</font></p>
 <p></font></i><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp;
 delete </font></b></font><font SIZE="2"><font face="Courier New">tbl;</font></p>
 <p><font face="Courier New">}</font></p>
 </font>
 <p>&nbsp;</p>
-<p>Помимо всего прочего, после прохождения
-узла функция удаляет его (освобождает
-указатель). Теперь разберёмся, что за
-параметры передаются в функцию.</p>
-<p>tbl - узел, который надо обойти.</p>
-<p>opcode - текущее кодовое слово. Старший бит
-должен быть всегда свободен. len - длина
-кодового слова. В принципе, функция не
-сложнее &quot;классического факториала&quot; и
-не должна вызывать трудностей.</p>
-<h3>Битовый вывод</h3>
-<p>Вот мы и добрались до не самой приятной
-части нашего архиватора, а именно - до
-вывода кодовых символов в файл. Проблема
-состоит в том, что кодовые символы имеют
-неравномерную длину и вывод приходится
-осуществлять побитовый. В этом поможет
-функция PutCode. Но для начала объявим две
-переменные - счётчик битов в байте и
-выводимый байт:</p>
+<p>РџРѕРјРёРјРѕ РІСЃРµРіРѕ РїСЂРѕС‡РµРіРѕ, РїРѕСЃР»Рµ РїСЂРѕС…РѕР¶РґРµРЅРёСЏ
+СѓР·Р»Р° С„СѓРЅРєС†РёСЏ СѓРґР°Р»СЏРµС‚ РµРіРѕ (РѕСЃРІРѕР±РѕР¶РґР°РµС‚
+СѓРєР°Р·Р°С‚РµР»СЊ). РўРµРїРµСЂСЊ СЂР°Р·Р±РµСЂС‘РјСЃСЏ, С‡С‚Рѕ Р·Р°
+РїР°СЂР°РјРµС‚СЂС‹ РїРµСЂРµРґР°СЋС‚СЃСЏ РІ С„СѓРЅРєС†РёСЋ.</p>
+<p>tbl - СѓР·РµР», РєРѕС‚РѕСЂС‹Р№ РЅР°РґРѕ РѕР±РѕР№С‚Рё.</p>
+<p>opcode - С‚РµРєСѓС‰РµРµ РєРѕРґРѕРІРѕРµ СЃР»РѕРІРѕ. РЎС‚Р°СЂС€РёР№ Р±РёС‚
+РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ РІСЃРµРіРґР° СЃРІРѕР±РѕРґРµРЅ. len - РґР»РёРЅР°
+РєРѕРґРѕРІРѕРіРѕ СЃР»РѕРІР°. Р’ РїСЂРёРЅС†РёРїРµ, С„СѓРЅРєС†РёСЏ РЅРµ
+СЃР»РѕР¶РЅРµРµ &quot;РєР»Р°СЃСЃРёС‡РµСЃРєРѕРіРѕ С„Р°РєС‚РѕСЂРёР°Р»Р°&quot; Рё
+РЅРµ РґРѕР»Р¶РЅР° РІС‹Р·С‹РІР°С‚СЊ С‚СЂСѓРґРЅРѕСЃС‚РµР№.</p>
+<h3>Р‘РёС‚РѕРІС‹Р№ РІС‹РІРѕРґ</h3>
+<p>Р’РѕС‚ РјС‹ Рё РґРѕР±СЂР°Р»РёСЃСЊ РґРѕ РЅРµ СЃР°РјРѕР№ РїСЂРёСЏС‚РЅРѕР№
+С‡Р°СЃС‚Рё РЅР°С€РµРіРѕ Р°СЂС…РёРІР°С‚РѕСЂР°, Р° РёРјРµРЅРЅРѕ - РґРѕ
+РІС‹РІРѕРґР° РєРѕРґРѕРІС‹С… СЃРёРјРІРѕР»РѕРІ РІ С„Р°Р№Р». РџСЂРѕР±Р»РµРјР°
+СЃРѕСЃС‚РѕРёС‚ РІ С‚РѕРј, С‡С‚Рѕ РєРѕРґРѕРІС‹Рµ СЃРёРјРІРѕР»С‹ РёРјРµСЋС‚
+РЅРµСЂР°РІРЅРѕРјРµСЂРЅСѓСЋ РґР»РёРЅСѓ Рё РІС‹РІРѕРґ РїСЂРёС…РѕРґРёС‚СЃСЏ
+РѕСЃСѓС‰РµСЃС‚РІР»СЏС‚СЊ РїРѕР±РёС‚РѕРІС‹Р№. Р’ СЌС‚РѕРј РїРѕРјРѕР¶РµС‚
+С„СѓРЅРєС†РёСЏ PutCode. РќРѕ РґР»СЏ РЅР°С‡Р°Р»Р° РѕР±СЉСЏРІРёРј РґРІРµ
+РїРµСЂРµРјРµРЅРЅС‹Рµ - СЃС‡С‘С‚С‡РёРє Р±РёС‚РѕРІ РІ Р±Р°Р№С‚Рµ Рё
+РІС‹РІРѕРґРёРјС‹Р№ Р±Р°Р№С‚:</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Счётчик битов</font></p>
+<p><font face="Courier New">// РЎС‡С‘С‚С‡РёРє Р±РёС‚РѕРІ</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">int </font></font></b><font SIZE="2"><font face="Courier New">OutBits;</font></p>
 </font><i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Выводимый символ</font></p>
+<p><font face="Courier New">// Р’С‹РІРѕРґРёРјС‹Р№ СЃРёРјРІРѕР»</font></p>
 </font></i><font SIZE="2">
 <p><font face="Courier New">BYTE OutChar;</font></p>
 </font>
-<p>OutBits увеличивается на один при каждом
-выводе бита, OutBits==8 сигнализирует о том, что
-OutChar следует сохранить в файл.</p>
+<p>OutBits СѓРІРµР»РёС‡РёРІР°РµС‚СЃСЏ РЅР° РѕРґРёРЅ РїСЂРё РєР°Р¶РґРѕРј
+РІС‹РІРѕРґРµ Р±РёС‚Р°, OutBits==8 СЃРёРіРЅР°Р»РёР·РёСЂСѓРµС‚ Рѕ С‚РѕРј, С‡С‚Рѕ
+OutChar СЃР»РµРґСѓРµС‚ СЃРѕС…СЂР°РЅРёС‚СЊ РІ С„Р°Р№Р».</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Соханить код</font></p>
+<p><font face="Courier New">// РЎРѕС…Р°РЅРёС‚СЊ РєРѕРґ</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">PutCode(<b>int
 </b>ch)</font></p>
@@ -532,23 +532,23 @@ OutChar следует сохранить в файл.</p>
 <p>&nbsp;</p>
 </font>
 <p><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
-// получаем длину кодового слова и само
-кодовое слово</font></p>
+// РїРѕР»СѓС‡Р°РµРј РґР»РёРЅСѓ РєРѕРґРѕРІРѕРіРѕ СЃР»РѕРІР° Рё СЃР°РјРѕ
+РєРѕРґРѕРІРѕРµ СЃР»РѕРІРѕ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; outcode=Opcodes[ch].opcode;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-кодовое слово</font></p>
+РєРѕРґРѕРІРѕРµ СЃР»РѕРІРѕ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; len=Opcodes[ch].len;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-длина (в битах)</font></p>
+РґР»РёРЅР° (РІ Р±РёС‚Р°С…)</font></p>
 <p>&nbsp;</p>
 <p></font></i><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp;
 while </font></b><font SIZE="2">(len&gt;</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">)
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-выводим побитно</font></p>
+РІС‹РІРѕРґРёРј РїРѕР±РёС‚РЅРѕ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-// Цикл пока переменная OutBits занята не
-полностью</font></p>
+// Р¦РёРєР» РїРѕРєР° РїРµСЂРµРјРµРЅРЅР°СЏ OutBits Р·Р°РЅСЏС‚Р° РЅРµ
+РїРѕР»РЅРѕСЃС‚СЊСЋ</font></p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 while </font></font></b><font face="Courier New"><font SIZE="2">((OutBits&lt;</font><font SIZE="2" COLOR="#008000">8</font><font SIZE="2">)
 &amp;&amp; (len&gt;</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">))</font></p>
@@ -556,95 +556,95 @@ while </font></font></b><font face="Courier New"><font SIZE="2">((OutBits&lt;</f
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 OutChar&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-освобождаем место</font></p>
+РѕСЃРІРѕР±РѕР¶РґР°РµРј РјРµСЃС‚Рѕ</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 OutChar|=((outcode&amp;</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">)&lt;&lt;</font><font SIZE="2" COLOR="#008000">7</font><font SIZE="2">);
-</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// и
-в него помещаем бит</font></p>
+</font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">// Рё
+РІ РЅРµРіРѕ РїРѕРјРµС‰Р°РµРј Р±РёС‚</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 outcode&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-следующий бит кода</font></p>
+СЃР»РµРґСѓСЋС‰РёР№ Р±РёС‚ РєРѕРґР°</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 len--;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-уменьшаем длину</font></p>
+СѓРјРµРЅСЊС€Р°РµРј РґР»РёРЅСѓ</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 OutBits++;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-количество битов выросло</font></p>
+РєРѕР»РёС‡РµСЃС‚РІРѕ Р±РёС‚РѕРІ РІС‹СЂРѕСЃР»Рѕ</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 }</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-// если используются все 8 бит, то сохраняем
-их в файл</font></p>
+// РµСЃР»Рё РёСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ РІСЃРµ 8 Р±РёС‚, С‚Рѕ СЃРѕС…СЂР°РЅСЏРµРј
+РёС… РІ С„Р°Р№Р»</font></p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 if </font></font></b><font face="Courier New"><font SIZE="2">(OutBits==</font><font SIZE="2" COLOR="#008000">8</font></font><font SIZE="2"><font face="Courier New">)</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 fputc(OutChar,out); </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-сохраняем в файл</font></p>
+СЃРѕС…СЂР°РЅСЏРµРј РІ С„Р°Р№Р»</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 OutBits=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-обнуляем</font></p>
+РѕР±РЅСѓР»СЏРµРј</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 OutChar=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-параметры</font></p>
+РїР°СЂР°РјРµС‚СЂС‹</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 }</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
 <p><font face="Courier New">}</font></p>
 </font>
-<p>Помимо этого, нужно организовать что-то
-вроде &quot;fflush&quot;, т.е. после вывода
-последнего кодового слова OutChar не
-поместится в выходной файл, т.к. OutBits!=8.
-Отсюда появляется ещё одна небольшая
-функция:</p>
+<p>РџРѕРјРёРјРѕ СЌС‚РѕРіРѕ, РЅСѓР¶РЅРѕ РѕСЂРіР°РЅРёР·РѕРІР°С‚СЊ С‡С‚Рѕ-С‚Рѕ
+РІСЂРѕРґРµ &quot;fflush&quot;, С‚.Рµ. РїРѕСЃР»Рµ РІС‹РІРѕРґР°
+РїРѕСЃР»РµРґРЅРµРіРѕ РєРѕРґРѕРІРѕРіРѕ СЃР»РѕРІР° OutChar РЅРµ
+РїРѕРјРµСЃС‚РёС‚СЃСЏ РІ РІС‹С…РѕРґРЅРѕР№ С„Р°Р№Р», С‚.Рє. OutBits!=8.
+РћС‚СЃСЋРґР° РїРѕСЏРІР»СЏРµС‚СЃСЏ РµС‰С‘ РѕРґРЅР° РЅРµР±РѕР»СЊС€Р°СЏ
+С„СѓРЅРєС†РёСЏ:</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// &quot;Очистка&quot; буфера
-битов</font></p>
+<p><font face="Courier New">// &quot;РћС‡РёСЃС‚РєР°&quot; Р±СѓС„РµСЂР°
+Р±РёС‚РѕРІ</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">void </font></font></b><font SIZE="2"><font face="Courier New">EndPut(<b>void</b>)</font></p>
 <p><font face="Courier New">{</font></p>
 </font>
 <p><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;
-// Если в буфере есть биты</font></p>
+// Р•СЃР»Рё РІ Р±СѓС„РµСЂРµ РµСЃС‚СЊ Р±РёС‚С‹</font></p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; if </font></font></b><font face="Courier New"><font SIZE="2">(OutBits!=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">)</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; OutChar&gt;&gt;=</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">8</font><font SIZE="2">-OutBits;
 </font></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-сдвигаем</font></p>
+СЃРґРІРёРіР°РµРј</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 fputc(OutChar,out);&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font face="Courier New">//
-и сохраняем в файле</font></p>
+Рё СЃРѕС…СЂР°РЅСЏРµРј РІ С„Р°Р№Р»Рµ</font></p>
 </i></font>
 <p><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; }</font></p>
 <p><font face="Courier New">}</font></p>
 </font>
-<h3>Вызываем помощников</h3>
-<p>Все рассмотренные ранее функции не
-являются основными. Но с их помощью можно
-проиллюстрировать простой порядок
-действий:</p>
-<p>1. Выписать все элементы в столбик и
-приписать вероятности.</p>
-<p>2. Построить дерево по полученному
-столбику.</p>
-<p>3. Записать кодовую таблицу символов.</p>
-<p>4. По кодовой таблице закодировать
-исходные данные.</p>
-<p>Собственно говоря, вот и функция, которая
-выполняет эти действия:</p>
+<h3>Р’С‹Р·С‹РІР°РµРј РїРѕРјРѕС‰РЅРёРєРѕРІ</h3>
+<p>Р’СЃРµ СЂР°СЃСЃРјРѕС‚СЂРµРЅРЅС‹Рµ СЂР°РЅРµРµ С„СѓРЅРєС†РёРё РЅРµ
+СЏРІР»СЏСЋС‚СЃСЏ РѕСЃРЅРѕРІРЅС‹РјРё. РќРѕ СЃ РёС… РїРѕРјРѕС‰СЊСЋ РјРѕР¶РЅРѕ
+РїСЂРѕРёР»Р»СЋСЃС‚СЂРёСЂРѕРІР°С‚СЊ РїСЂРѕСЃС‚РѕР№ РїРѕСЂСЏРґРѕРє
+РґРµР№СЃС‚РІРёР№:</p>
+<p>1. Р’С‹РїРёСЃР°С‚СЊ РІСЃРµ СЌР»РµРјРµРЅС‚С‹ РІ СЃС‚РѕР»Р±РёРє Рё
+РїСЂРёРїРёСЃР°С‚СЊ РІРµСЂРѕСЏС‚РЅРѕСЃС‚Рё.</p>
+<p>2. РџРѕСЃС‚СЂРѕРёС‚СЊ РґРµСЂРµРІРѕ РїРѕ РїРѕР»СѓС‡РµРЅРЅРѕРјСѓ
+СЃС‚РѕР»Р±РёРєСѓ.</p>
+<p>3. Р—Р°РїРёСЃР°С‚СЊ РєРѕРґРѕРІСѓСЋ С‚Р°Р±Р»РёС†Сѓ СЃРёРјРІРѕР»РѕРІ.</p>
+<p>4. РџРѕ РєРѕРґРѕРІРѕР№ С‚Р°Р±Р»РёС†Рµ Р·Р°РєРѕРґРёСЂРѕРІР°С‚СЊ
+РёСЃС…РѕРґРЅС‹Рµ РґР°РЅРЅС‹Рµ.</p>
+<p>РЎРѕР±СЃС‚РІРµРЅРЅРѕ РіРѕРІРѕСЂСЏ, РІРѕС‚ Рё С„СѓРЅРєС†РёСЏ, РєРѕС‚РѕСЂР°СЏ
+РІС‹РїРѕР»РЅСЏРµС‚ СЌС‚Рё РґРµР№СЃС‚РІРёСЏ:</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Создание сжатого файла</font></p>
+<p><font face="Courier New">// РЎРѕР·РґР°РЅРёРµ СЃР¶Р°С‚РѕРіРѕ С„Р°Р№Р»Р°</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">void </font> </font></b><font SIZE="2"><font face="Courier New">MakeFile(<b>void</b>)</font></p>
 <p><font face="Courier New">{</font></p>
@@ -652,43 +652,43 @@ fputc(OutChar,out);&nbsp; </font></font><font SIZE="2" COLOR="#ff0000"><i><font 
 <p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; int </font> </b><font face="Courier New">ch;</font></p>
 <p><font face="Courier New">&nbsp;</font></p>
 </font>
-<p><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // выписать
-все элементы в столбик и приписать
-вероятности</font></p>
+<p><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; // РІС‹РїРёСЃР°С‚СЊ
+РІСЃРµ СЌР»РµРјРµРЅС‚С‹ РІ СЃС‚РѕР»Р±РёРє Рё РїСЂРёРїРёСЃР°С‚СЊ
+РІРµСЂРѕСЏС‚РЅРѕСЃС‚Рё</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; count=CountFrequency();</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; //
-построить дерево</font></p>
+РїРѕСЃС‚СЂРѕРёС‚СЊ РґРµСЂРµРІРѕ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; PreInit(count);</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; //
-записать кодовую таблицу символов</font></p>
+Р·Р°РїРёСЃР°С‚СЊ РєРѕРґРѕРІСѓСЋ С‚Р°Р±Р»РёС†Сѓ СЃРёРјРІРѕР»РѕРІ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; RecurseMake(Freq[</font></font><font face="Courier New"><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">].table,</font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2">,</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">);</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp; //
-закодировать по кодовой таблице исходные
-данные</font></p>
+Р·Р°РєРѕРґРёСЂРѕРІР°С‚СЊ РїРѕ РєРѕРґРѕРІРѕР№ С‚Р°Р±Р»РёС†Рµ РёСЃС…РѕРґРЅС‹Рµ
+РґР°РЅРЅС‹Рµ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp; fseek(in,</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">,SEEK_SET);</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; OutChar=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; OutBits=</font></font><font SIZE="2" COLOR="#008000">0</font><font SIZE="2"><font face="Courier New">;</font></p>
 <p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; while </font> </b><font face="Courier New">((ch=fgetc(in))!=EOF)</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PutCode(ch);</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; EndPut(); </font> </font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">//
-&quot;очистить буфер&quot;</font></p>
+&quot;РѕС‡РёСЃС‚РёС‚СЊ Р±СѓС„РµСЂ&quot;</font></p>
 </font></i><font SIZE="2">
 <p><font face="Courier New">}</font></p>
 </font>
-<h3>Мейн</h3>
-<p>Всё, все функции готовы. Осталось только
-реализовать функцию main. Необходимо
-определить, какие она должна получить
-аргументы. А всё очень просто - имя
-исходного файла, имя закодированного файла,
-а также имя файла, в который будет помещена
-таблица. Лично я всю операцию по открытию/закрытию
-файлов решил возложить на main. И вот как это
-выглядит:</p>
+<h3>РњРµР№РЅ</h3>
+<p>Р’СЃС‘, РІСЃРµ С„СѓРЅРєС†РёРё РіРѕС‚РѕРІС‹. РћСЃС‚Р°Р»РѕСЃСЊ С‚РѕР»СЊРєРѕ
+СЂРµР°Р»РёР·РѕРІР°С‚СЊ С„СѓРЅРєС†РёСЋ main. РќРµРѕР±С…РѕРґРёРјРѕ
+РѕРїСЂРµРґРµР»РёС‚СЊ, РєР°РєРёРµ РѕРЅР° РґРѕР»Р¶РЅР° РїРѕР»СѓС‡РёС‚СЊ
+Р°СЂРіСѓРјРµРЅС‚С‹. Рђ РІСЃС‘ РѕС‡РµРЅСЊ РїСЂРѕСЃС‚Рѕ - РёРјСЏ
+РёСЃС…РѕРґРЅРѕРіРѕ С„Р°Р№Р»Р°, РёРјСЏ Р·Р°РєРѕРґРёСЂРѕРІР°РЅРЅРѕРіРѕ С„Р°Р№Р»Р°,
+Р° С‚Р°РєР¶Рµ РёРјСЏ С„Р°Р№Р»Р°, РІ РєРѕС‚РѕСЂС‹Р№ Р±СѓРґРµС‚ РїРѕРјРµС‰РµРЅР°
+С‚Р°Р±Р»РёС†Р°. Р›РёС‡РЅРѕ СЏ РІСЃСЋ РѕРїРµСЂР°С†РёСЋ РїРѕ РѕС‚РєСЂС‹С‚РёСЋ/Р·Р°РєСЂС‹С‚РёСЋ
+С„Р°Р№Р»РѕРІ СЂРµС€РёР» РІРѕР·Р»РѕР¶РёС‚СЊ РЅР° main. Р РІРѕС‚ РєР°Рє СЌС‚Рѕ
+РІС‹РіР»СЏРґРёС‚:</p>
 <font SIZE="2" COLOR="#008000">
 <p><font face="Courier New">#include &lt;stdio.h&gt;</font></p>
 </font><i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Определение типов данных</font></p>
+<p><font face="Courier New">// РћРїСЂРµРґРµР»РµРЅРёРµ С‚РёРїРѕРІ РґР°РЅРЅС‹С…</font></p>
 </font></i><font SIZE="2" COLOR="#008000">
 <p><font face="Courier New">#ifdef __MSDOS__</font></p>
 <p></font><font face="Courier New"><b><font SIZE="2">&nbsp;&nbsp;&nbsp; typedef
@@ -706,14 +706,14 @@ unsigned char </font></b></font><font SIZE="2"><font face="Courier New">BYTE;</f
 </font>
 <p>&nbsp;</p>
 <i><font SIZE="2" COLOR="#ff0000">
-<p><font face="Courier New">// Ахтунг! Главная функция!</font></p>
+<p><font face="Courier New">// РђС…С‚СѓРЅРі! Р“Р»Р°РІРЅР°СЏ С„СѓРЅРєС†РёСЏ!</font></p>
 </font></i><b><font SIZE="2">
 <p><font face="Courier New">void </font> </font></b><font SIZE="2"><font face="Courier New">main(<b>int </b>argc, <b>char </b>*argv[])</font></p>
 <p><font face="Courier New">{</font></p>
 <p><b><font face="Courier New">&nbsp;&nbsp;&nbsp; if </font> </b><font face="Courier New">(argc==</font></font><font SIZE="2" COLOR="#008000">4</font><font SIZE="2"><font face="Courier New">)</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp; {</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-// поочереди открываем/закрываем файлы</font></p>
+// РїРѕРѕС‡РµСЂРµРґРё РѕС‚РєСЂС‹РІР°РµРј/Р·Р°РєСЂС‹РІР°РµРј С„Р°Р№Р»С‹</font></p>
 <p></font></i><b><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if
 </font> </font></b><font face="Courier New"><font SIZE="2">((in=fopen(argv[</font><font SIZE="2" COLOR="#008000">1</font><font SIZE="2">],</font><font SIZE="2" COLOR="#000080">&quot;rb+&quot;</font><font SIZE="2">))!=</font><font SIZE="2" COLOR="#008000">0</font></font><font SIZE="2"><font face="Courier New">)</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</font></p>
@@ -725,7 +725,7 @@ if </font> </b><font face="Courier New">((assemb=fopen(argv[</font></font><font 
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 {</font></p>
 <p></font><i><font SIZE="2" COLOR="#ff0000"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-// дошли до момента, когда можно делать код</font></p>
+// РґРѕС€Р»Рё РґРѕ РјРѕРјРµРЅС‚Р°, РєРѕРіРґР° РјРѕР¶РЅРѕ РґРµР»Р°С‚СЊ РєРѕРґ</font></p>
 <p></font></i><font SIZE="2"><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 MakeFile();</font></p>
 <p><font face="Courier New">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -760,38 +760,38 @@ XARCH source output asm-file&quot;</font><font SIZE="2"><font face="Courier New"
 </font>
 <p>&nbsp;</p>
 
-<h3>Постскриптум</h3>
+<h3>РџРѕСЃС‚СЃРєСЂРёРїС‚СѓРј</h3>
 
-<p>Вот и эта статья подошла к своему
-логическому завершению. В принципе, здесь
-представлен вполне рабочий код. Однако
-стоит заметить, что этот код не всегда
-способен работать. Например, если частоты
-символов обладают следующей
-закономерностью: 0.5, 0.25, 0.125, 0.0625, то есть у
-каждого символа вероятность его появления
-обратнопропорциональна степени двойки. В
-таком случае максимальная длина символа
-составит 255 бит, что никак не поместится в
-переменную типа DWORD. Поэтому для таких
-особых случаев придётся немного
-поднапрячься и усложнить генерацию кодовой
-таблицы.</p>
-<p>Да, чуть не забыл. Провёл бенчмарк, сжав
-эту статью. Получил отношение 1:1.41, что
-довольно-таки неплохо.</p>
+<p>Р’РѕС‚ Рё СЌС‚Р° СЃС‚Р°С‚СЊСЏ РїРѕРґРѕС€Р»Р° Рє СЃРІРѕРµРјСѓ
+Р»РѕРіРёС‡РµСЃРєРѕРјСѓ Р·Р°РІРµСЂС€РµРЅРёСЋ. Р’ РїСЂРёРЅС†РёРїРµ, Р·РґРµСЃСЊ
+РїСЂРµРґСЃС‚Р°РІР»РµРЅ РІРїРѕР»РЅРµ СЂР°Р±РѕС‡РёР№ РєРѕРґ. РћРґРЅР°РєРѕ
+СЃС‚РѕРёС‚ Р·Р°РјРµС‚РёС‚СЊ, С‡С‚Рѕ СЌС‚РѕС‚ РєРѕРґ РЅРµ РІСЃРµРіРґР°
+СЃРїРѕСЃРѕР±РµРЅ СЂР°Р±РѕС‚Р°С‚СЊ. РќР°РїСЂРёРјРµСЂ, РµСЃР»Рё С‡Р°СЃС‚РѕС‚С‹
+СЃРёРјРІРѕР»РѕРІ РѕР±Р»Р°РґР°СЋС‚ СЃР»РµРґСѓСЋС‰РµР№
+Р·Р°РєРѕРЅРѕРјРµСЂРЅРѕСЃС‚СЊСЋ: 0.5, 0.25, 0.125, 0.0625, С‚Рѕ РµСЃС‚СЊ Сѓ
+РєР°Р¶РґРѕРіРѕ СЃРёРјРІРѕР»Р° РІРµСЂРѕСЏС‚РЅРѕСЃС‚СЊ РµРіРѕ РїРѕСЏРІР»РµРЅРёСЏ
+РѕР±СЂР°С‚РЅРѕРїСЂРѕРїРѕСЂС†РёРѕРЅР°Р»СЊРЅР° СЃС‚РµРїРµРЅРё РґРІРѕР№РєРё. Р’
+С‚Р°РєРѕРј СЃР»СѓС‡Р°Рµ РјР°РєСЃРёРјР°Р»СЊРЅР°СЏ РґР»РёРЅР° СЃРёРјРІРѕР»Р°
+СЃРѕСЃС‚Р°РІРёС‚ 255 Р±РёС‚, С‡С‚Рѕ РЅРёРєР°Рє РЅРµ РїРѕРјРµСЃС‚РёС‚СЃСЏ РІ
+РїРµСЂРµРјРµРЅРЅСѓСЋ С‚РёРїР° DWORD. РџРѕСЌС‚РѕРјСѓ РґР»СЏ С‚Р°РєРёС…
+РѕСЃРѕР±С‹С… СЃР»СѓС‡Р°РµРІ РїСЂРёРґС‘С‚СЃСЏ РЅРµРјРЅРѕРіРѕ
+РїРѕРґРЅР°РїСЂСЏС‡СЊСЃСЏ Рё СѓСЃР»РѕР¶РЅРёС‚СЊ РіРµРЅРµСЂР°С†РёСЋ РєРѕРґРѕРІРѕР№
+С‚Р°Р±Р»РёС†С‹.</p>
+<p>Р”Р°, С‡СѓС‚СЊ РЅРµ Р·Р°Р±С‹Р». РџСЂРѕРІС‘Р» Р±РµРЅС‡РјР°СЂРє, СЃР¶Р°РІ
+СЌС‚Сѓ СЃС‚Р°С‚СЊСЋ. РџРѕР»СѓС‡РёР» РѕС‚РЅРѕС€РµРЅРёРµ 1:1.41, С‡С‚Рѕ
+РґРѕРІРѕР»СЊРЅРѕ-С‚Р°РєРё РЅРµРїР»РѕС…Рѕ.</p>
 
 <h3>P.P.S.</h3>
 
-<p>Позволю себе немного пофилософствовать.
-Сначала я не знал C++ и говорил: &quot;C++ это -
-язык программирования&quot;. Потом, когда стал
-его изучать, я всячески его хвалил: &quot;он
-может то, может это, а вот это - вообще класс,
-это супер язык&quot;. Но помере набора опыта С++
-стал для меня &quot;просто языком
-программирования&quot;. Почувствуйте разницу
-между этими тремя утверждениями.</p>
+<p>РџРѕР·РІРѕР»СЋ СЃРµР±Рµ РЅРµРјРЅРѕРіРѕ РїРѕС„РёР»РѕСЃРѕС„СЃС‚РІРѕРІР°С‚СЊ.
+РЎРЅР°С‡Р°Р»Р° СЏ РЅРµ Р·РЅР°Р» C++ Рё РіРѕРІРѕСЂРёР»: &quot;C++ СЌС‚Рѕ -
+СЏР·С‹Рє РїСЂРѕРіСЂР°РјРјРёСЂРѕРІР°РЅРёСЏ&quot;. РџРѕС‚РѕРј, РєРѕРіРґР° СЃС‚Р°Р»
+РµРіРѕ РёР·СѓС‡Р°С‚СЊ, СЏ РІСЃСЏС‡РµСЃРєРё РµРіРѕ С…РІР°Р»РёР»: &quot;РѕРЅ
+РјРѕР¶РµС‚ С‚Рѕ, РјРѕР¶РµС‚ СЌС‚Рѕ, Р° РІРѕС‚ СЌС‚Рѕ - РІРѕРѕР±С‰Рµ РєР»Р°СЃСЃ,
+СЌС‚Рѕ СЃСѓРїРµСЂ СЏР·С‹Рє&quot;. РќРѕ РїРѕРјРµСЂРµ РЅР°Р±РѕСЂР° РѕРїС‹С‚Р° РЎ++
+СЃС‚Р°Р» РґР»СЏ РјРµРЅСЏ &quot;РїСЂРѕСЃС‚Рѕ СЏР·С‹РєРѕРј
+РїСЂРѕРіСЂР°РјРјРёСЂРѕРІР°РЅРёСЏ&quot;. РџРѕС‡СѓРІСЃС‚РІСѓР№С‚Рµ СЂР°Р·РЅРёС†Сѓ
+РјРµР¶РґСѓ СЌС‚РёРјРё С‚СЂРµРјСЏ СѓС‚РІРµСЂР¶РґРµРЅРёСЏРјРё.</p>
 
 </body>
 
